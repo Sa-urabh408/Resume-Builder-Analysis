@@ -1,0 +1,4 @@
+# Force GitHub Linguist to detect Python as the primary language
+templates/** linguist-detectable=false
+static/css/** linguist-detectable=false
+static/js/firebase-init.js linguist-detectable=false
