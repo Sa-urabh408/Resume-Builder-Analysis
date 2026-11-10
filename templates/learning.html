@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Learning Resources & Roadmap — ResumeAI</title>
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <style>
+    .learning-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .learning-header h1 { margin: 0; font-size: 1.8rem; }
+    .learning-header p { color: var(--text-muted); margin-top: 0.25rem; font-size: 0.9rem; }
+
+    /* Free badge banner */
+    .free-guarantee-banner {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(6, 182, 212, 0.12));
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.88rem;
+      color: #6EE7B7;
+    }
+
+    /* Tabs */
+    .nav-tabs {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2rem;
+    }
+    .nav-tab-btn {
+      padding: 0.75rem 1.25rem;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: var(--transition);
+    }
+    .nav-tab-btn:hover { color: var(--text-primary); }
+    .nav-tab-btn.active {
+      color: var(--brand-blue);
+      border-bottom-color: var(--brand-blue);
+    }
+    .tab-content-panel { display: none; }
+    .tab-content-panel.active { display: block; }
+
+    /* Plan Cards */
+    .plan-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .plan-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      transition: var(--transition);
+    }
+    .plan-card:hover {
+      border-color: var(--border-accent);
+      box-shadow: var(--shadow-glow-blue);
+    }
+    .plan-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .plan-skill-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .why-box {
+      background: rgba(245, 158, 11, 0.08);
+      border-left: 3px solid var(--brand-gold);
+      padding: 0.75rem 1rem;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      margin-bottom: 1.25rem;
+      font-size: 0.88rem;
+      color: #FCD34D;
+    }
+    .topics-section {
+      margin-bottom: 1.25rem;
+    }
+    .section-title-sm {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 0.6rem;
+    }
+    .topic-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+    .topic-pill {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      padding: 0.25rem 0.65rem;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .project-box {
+      background: rgba(124, 58, 237, 0.08);
+      border: 1px solid rgba(124, 58, 237, 0.25);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .project-box .project-title {
+      font-weight: 600;
+      color: #C4B5FD;
+      font-size: 0.88rem;
+      margin-bottom: 0.25rem;
+    }
+    .project-box .project-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    /* Resource list */
+    .resource-subgrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 0.75rem;
+    }
+    .res-card {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 0.5rem;
+      transition: var(--transition);
+      text-decoration: none;
+    }
+    .res-card:hover {
+      border-color: var(--brand-blue);
+      transform: translateY(-2px);
+    }
+    .res-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .res-platform {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--brand-blue);
+      text-transform: uppercase;
+    }
+    .res-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.3;
+    }
+    .res-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 0.25rem;
+    }
+    .free-pill {
+      font-size: 0.7rem;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34D399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: var(--radius-full);
+      padding: 0.15rem 0.5rem;
+      font-weight: 600;
+    }
+
+    /* Filter Bar for Tab 2 */
+    .search-filter-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .filter-row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .quick-chips {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      margin-top: 0.75rem;
+    }
+    .quick-chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      padding: 0.25rem 0.65rem;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .quick-chip:hover, .quick-chip.active {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: var(--brand-blue);
+      color: #93C5FD;
+    }
+
+    /* Roadmap Tab 3 */
+    .roadmap-progress-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .roadmap-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      position: relative;
+    }
+    .roadmap-task-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      transition: var(--transition);
+    }
+    .roadmap-task-card.completed {
+      border-color: rgba(16, 185, 129, 0.3);
+      background: rgba(16, 185, 129, 0.04);
+    }
+    .task-check {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      border: 2px solid var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.2rem;
+      flex-shrink: 0;
+      transition: var(--transition);
+    }
+    .task-check.checked {
+      background: var(--brand-green);
+      border-color: var(--brand-green);
+      color: white;
+    }
+    .week-tag {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--brand-blue);
+      margin-bottom: 0.25rem;
+    }
+
+    /* Empty state */
+    .empty-state-box {
+      text-align: center;
+      padding: 3rem 1.5rem;
+      background: var(--bg-card);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-xl);
+    }
+    .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    {% include 'partials/sidebar.html' %}
+
+    <!-- Main Content -->
+    <div class="main-content">
+      {% with topbar_label="Learning & Plan" %}
+        {% include 'partials/topbar.html' %}
+      {% endwith %}
+
+      <div class="page-content">
+        <div class="learning-header">
+          <div>
+            <h1>Learning Resources & Roadmap</h1>
+            <p>Personalized learning plans, free curated tutorials, and progress roadmap</p>
+          </div>
+        </div>
+
+        <!-- 100% Free Guarantee Banner -->
+        <div class="free-guarantee-banner">
+          <span>✨</span>
+          <div>
+            <strong>100% Free & Verified Resources:</strong> All recommendations use verified free YouTube tutorials, official documentation, and free coding practice platforms. No paid subscriptions or hidden costs.
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="nav-tabs">
+          <button class="nav-tab-btn active" data-tab="plan">📋 My Learning Plan</button>
+          <button class="nav-tab-btn" data-tab="library">🔍 Free Resource Library</button>
+          <button class="nav-tab-btn" data-tab="roadmap">🗺️ My Roadmap</button>
+        </div>
+
+        <!-- TAB 1: My Learning Plan -->
+        <div id="tab-plan" class="tab-content-panel active">
+          <div id="plan-container" class="plan-grid">
+            <div style="text-align:center;padding:2rem;">
+              <div class="spinner" style="margin:0 auto 1rem;"></div>
+              <p style="color:var(--text-muted)">Loading your personalized learning recommendations...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: Resource Library -->
+        <div id="tab-library" class="tab-content-panel">
+          <div class="search-filter-card">
+            <div class="filter-row">
+              <div style="flex: 2; min-width: 200px;">
+                <label class="form-label" style="font-size:0.8rem;">Select or Search Skill</label>
+                <input type="text" id="lib-skill-input" class="form-input" placeholder="e.g. Python, SQL, React, Git, Docker..." value="python" />
+              </div>
+              <div style="flex: 1; min-width: 140px;">
+                <label class="form-label" style="font-size:0.8rem;">Skill Level</label>
+                <select id="lib-level-select" class="form-select">
+                  <option value="Beginner">Beginner</option>
+                  <option value="Intermediate">Intermediate</option>
+                  <option value="Advanced">Advanced</option>
+                </select>
+              </div>
+              <div style="display:flex;align-items:flex-end;height:65px;">
+                <button id="lib-search-btn" class="btn btn-primary" style="height:42px;">🔍 Search Free Resources</button>
+              </div>
+            </div>
+
+            <!-- Quick skill pills -->
+            <div style="margin-top:1rem;">
+              <span style="font-size:0.75rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;">Quick Skills:</span>
+              <div id="quick-skills-pills" class="quick-chips">
+                <span class="quick-chip active" data-skill="python">Python</span>
+                <span class="quick-chip" data-skill="javascript">JavaScript</span>
+                <span class="quick-chip" data-skill="react">React</span>
+                <span class="quick-chip" data-skill="sql">SQL</span>
+                <span class="quick-chip" data-skill="java">Java</span>
+                <span class="quick-chip" data-skill="git">Git</span>
+                <span class="quick-chip" data-skill="docker">Docker</span>
+                <span class="quick-chip" data-skill="rest api">REST API</span>
+                <span class="quick-chip" data-skill="kotlin">Kotlin</span>
+                <span class="quick-chip" data-skill="android">Android</span>
+                <span class="quick-chip" data-skill="data structures">Data Structures</span>
+                <span class="quick-chip" data-skill="machine learning">Machine Learning</span>
+                <span class="quick-chip" data-skill="html">HTML</span>
+                <span class="quick-chip" data-skill="css">CSS</span>
+                <span class="quick-chip" data-skill="linux">Linux</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Library Results -->
+          <div id="library-results-container">
+            <div style="text-align:center;padding:2rem;">
+              <div class="spinner" style="margin:0 auto 1rem;"></div>
+              <p style="color:var(--text-muted)">Loading resources...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: Roadmap -->
+        <div id="tab-roadmap" class="tab-content-panel">
+          <div class="roadmap-progress-card">
+            <div>
+              <div style="font-size:1.15rem;font-weight:700;color:var(--text-primary);">Career Improvement Roadmap</div>
+              <p id="roadmap-status-text" style="color:var(--text-muted);margin:0;font-size:0.85rem;">Track your progress week-by-week</p>
+            </div>
+            <div style="min-width: 220px;">
+              <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:0.3rem;">
+                <span style="color:var(--text-muted)">Completion</span>
+                <span id="roadmap-pct-text" style="font-weight:700;color:var(--brand-green)">0%</span>
+              </div>
+              <div class="progress-bar-wrap" style="height:10px;">
+                <div id="roadmap-progress-bar" class="progress-bar green" style="width:0%;"></div>
+              </div>
+            </div>
+            <button id="generate-roadmap-btn" class="btn btn-secondary btn-sm" style="display:none;">
+              🔄 Re-Generate Roadmap
+            </button>
+          </div>
+
+          <div id="roadmap-tasks-container" class="roadmap-timeline">
+            <div style="text-align:center;padding:2rem;">
+              <div class="spinner" style="margin:0 auto 1rem;"></div>
+              <p style="color:var(--text-muted)">Loading roadmap tasks...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include 'partials/firebase_boot.html' %}
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (typeof onAuthRequired === 'function') {
+        const user = await onAuthRequired('/login');
+        if (!user) return;
+      }
+
+      // Tab switcher
+      const tabBtns = document.querySelectorAll('.nav-tab-btn');
+      const tabPanels = document.querySelectorAll('.tab-content-panel');
+      function switchTab(tabName) {
+        tabBtns.forEach(b => b.classList.remove('active'));
+        tabPanels.forEach(p => p.classList.remove('active'));
+        const btn = document.querySelector(`.nav-tab-btn[data-tab="${tabName}"]`);
+        if (btn) btn.classList.add('active');
+        const panel = document.getElementById('tab-' + tabName);
+        if (panel) panel.classList.add('active');
+      }
+
+      tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          switchTab(btn.dataset.tab);
+        });
+      });
+
+      // Check URL parameters (e.g. /learning?skill=docker or ?tab=library)
+      const urlParams = new URLSearchParams(window.location.search);
+      const querySkill = urlParams.get('skill');
+      const queryTab = urlParams.get('tab');
+
+      // Load data
+      loadLearningPlan();
+      loadRoadmap();
+
+      if (querySkill) {
+        switchTab('library');
+        document.getElementById('lib-skill-input').value = querySkill;
+        loadResourceLibrary(querySkill, 'Beginner');
+      } else {
+        loadResourceLibrary('python', 'Beginner');
+        if (queryTab) switchTab(queryTab);
+      }
+
+      // Quick chip clicks
+      document.querySelectorAll('.quick-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          document.querySelectorAll('.quick-chip').forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          const skill = chip.dataset.skill;
+          document.getElementById('lib-skill-input').value = skill;
+          const level = document.getElementById('lib-level-select').value;
+          loadResourceLibrary(skill, level);
+        });
+      });
+
+      // Search button
+      document.getElementById('lib-search-btn').addEventListener('click', () => {
+        const skill = document.getElementById('lib-skill-input').value.trim();
+        const level = document.getElementById('lib-level-select').value;
+        if (!skill) {
+          showToast('Please enter a skill to search', 'warning');
+          return;
+        }
+        loadResourceLibrary(skill, level);
+      });
+    });
+
+    // ── Load Tab 1: Learning Plan from latest analysis ──
+    async function loadLearningPlan() {
+      const container = document.getElementById('plan-container');
+      try {
+        let analysis = loadAnalysisFromSession();
+        if (!analysis || !analysis.learning_recommendations) {
+          // Fetch from history
+          const hist = await apiCall('GET', '/api/analysis/history');
+          const evalList = (hist && (hist.evaluations || hist.analyses)) || [];
+          if (evalList.length > 0) {
+            const latestId = evalList[0].evalId || evalList[0].analysisId;
+            const full = await apiCall('GET', `/api/analysis/${latestId}`);
+            analysis = full.fullAnalysis || full;
+            saveAnalysisToSession(analysis);
+          }
+        }
+
+        if (!analysis || !analysis.learning_recommendations || analysis.learning_recommendations.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state-box">
+              <div class="empty-icon">📄</div>
+              <h3>No Analysis Yet</h3>
+              <p style="color:var(--text-muted);margin-bottom:1.5rem;">Upload your resume to receive AI-powered personalized learning recommendations tailored to your skill gaps.</p>
+              <a href="/upload" class="btn btn-primary">Upload Resume Now</a>
+            </div>
+          `;
+          return;
+        }
+
+        const recs = analysis.learning_recommendations || [];
+        container.innerHTML = recs.map(rec => {
+          const priorityClass = rec.priority === 'High' ? 'badge-red' : (rec.priority === 'Medium' ? 'badge-gold' : 'badge-blue');
+          const topics = rec.topics_to_learn || [];
+          const resources = rec.curated_resources || [];
+
+          return `
+            <div class="plan-card">
+              <div class="plan-card-header">
+                <div class="plan-skill-title">
+                  <span>${escapeHtml(rec.skill)}</span>
+                  <span class="badge ${priorityClass}">${rec.priority || 'Medium'} Priority</span>
+                  <span class="badge badge-blue">Level: ${rec.current_level || 'Beginner'}</span>
+                </div>
+                ${rec.estimated_weeks ? `<span style="font-size:0.85rem;color:var(--text-muted)">⏱️ Estimated: ${rec.estimated_weeks} weeks</span>` : ''}
+              </div>
+
+              <div class="why-box">
+                <strong>Why Improve:</strong> ${escapeHtml(rec.why_improve || 'To strengthen your resume and address critical skill gaps for target roles.')}
+              </div>
+
+              ${topics.length > 0 ? `
+                <div class="topics-section">
+                  <div class="section-title-sm">Key Topics To Master</div>
+                  <div class="topic-pills">
+                    ${topics.map((t, idx) => `<span class="topic-pill">#${idx+1} ${escapeHtml(t)}</span>`).join('')}
+                  </div>
+                </div>
+              ` : ''}
+
+              ${rec.project_idea ? `
+                <div class="project-box">
+                  <div class="project-title">💡 Hands-on Project to Build & Add to Resume:</div>
+                  <div class="project-desc">${escapeHtml(rec.project_idea)}</div>
+                </div>
+              ` : ''}
+
+              <div class="section-title-sm">Verified Free Learning Resources</div>
+              ${resources.length > 0 ? `
+                <div class="resource-subgrid">
+                  ${resources.map(r => {
+                    const isYt = (r.platform === 'YouTube' || r.type === 'youtube');
+                    return `
+                    <div class="res-card">
+                      <div class="res-top">
+                        <span class="res-platform" style="${isYt ? 'color:#E50914;font-weight:700;' : ''}">${isYt ? '▶ YouTube' : escapeHtml(r.platform || 'Online')}</span>
+                        <span class="free-pill">100% FREE</span>
+                      </div>
+                      <div class="res-title">${escapeHtml(r.title)}</div>
+                      ${r.channel ? `
+                        <div style="font-size:0.75rem;color:var(--text-muted);margin:0.15rem 0;">
+                          Channel: <strong style="color:var(--text-secondary);">${escapeHtml(r.channel)}</strong>${r.duration ? ` • ${escapeHtml(r.duration)}` : ''}
+                        </div>
+                      ` : ''}
+                      <div class="res-bottom" style="margin-top:0.6rem;display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;">
+                        ${isYt ? `
+                          <button type="button" class="btn btn-primary btn-sm play-video-trigger" data-url="${escapeHtml(r.url)}" data-title="${escapeHtml(r.title)}" data-channel="${escapeHtml(r.channel || '')}" style="font-size:0.75rem;padding:0.25rem 0.6rem;">
+                            ▶ Play Video
+                          </button>
+                          <a href="${escapeHtml(r.url)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="font-size:0.75rem;padding:0.25rem 0.6rem;text-decoration:none;">
+                            YouTube ↗
+                          </a>
+                        ` : `
+                          <a href="${escapeHtml(r.url)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="font-size:0.75rem;padding:0.25rem 0.6rem;text-decoration:none;">
+                            Open Docs ↗
+                          </a>
+                        `}
+                      </div>
+                    </div>
+                  `}).join('')}
+                </div>
+              ` : `
+                <p style="font-size:0.85rem;color:var(--text-muted)">Search the Free Resource Library tab for curated tutorials on ${escapeHtml(rec.skill)}.</p>
+              `}
+            </div>
+          `;
+        }).join('');
+
+        // Attach video player triggers in Tab 1
+        container.querySelectorAll('.play-video-trigger').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const url = btn.getAttribute('data-url');
+            const title = btn.getAttribute('data-title');
+            const channel = btn.getAttribute('data-channel');
+            if (typeof openVideoModal === 'function') {
+              openVideoModal(url, title, channel);
+            } else {
+              window.open(url, '_blank', 'noopener,noreferrer');
+            }
+          });
+        });
+
+      } catch (e) {
+        console.error('Error loading plan:', e);
+        container.innerHTML = `
+          <div class="alert alert-error">
+            Failed to load learning plan. Please try refreshing or re-analyzing your resume.
+          </div>
+        `;
+      }
+    }
+
+    // ── Load Tab 2: Resource Library ──
+    async function loadResourceLibrary(skill, level) {
+      const container = document.getElementById('library-results-container');
+      container.innerHTML = `<div style="text-align:center;padding:2rem;"><div class="spinner" style="margin:0 auto 1rem;"></div><p style="color:var(--text-muted)">Loading curated free resources for ${escapeHtml(skill)}...</p></div>`;
+
+      try {
+        const res = await apiCall('GET', `/api/learning/resources?skill=${encodeURIComponent(skill)}&level=${encodeURIComponent(level)}&free_only=true`);
+        const items = res.resources || [];
+
+        if (items.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state-box">
+              <div class="empty-icon">🔍</div>
+              <h4>No resources found for "${escapeHtml(skill)}" (${level})</h4>
+              <p style="color:var(--text-muted)">Try picking from one of the quick skill chips above, or search "Python", "SQL", "JavaScript", "Docker", "Git", etc.</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = `
+          <div style="margin-bottom:1rem;font-size:0.9rem;color:var(--text-muted)">
+            Found <strong>${items.length}</strong> verified free learning resources for <strong>${escapeHtml(skill)}</strong> (${level}):
+          </div>
+          <div class="resource-subgrid">
+            ${items.map(r => {
+              const isYt = (r.platform === 'YouTube' || r.type === 'youtube');
+              return `
+              <div class="res-card">
+                <div class="res-top">
+                  <span class="res-platform" style="${isYt ? 'color:#E50914;font-weight:700;' : ''}">${isYt ? '▶ YouTube' : escapeHtml(r.platform || 'Online')}</span>
+                  <span class="free-pill">100% FREE</span>
+                </div>
+                <div class="res-title">${escapeHtml(r.title)}</div>
+                ${r.channel ? `
+                  <div style="font-size:0.75rem;color:var(--text-muted);margin:0.15rem 0;">
+                    Channel: <strong style="color:var(--text-secondary);">${escapeHtml(r.channel)}</strong>${r.duration ? ` • ${escapeHtml(r.duration)}` : ''}
+                  </div>
+                ` : ''}
+                <div class="res-bottom" style="margin-top:0.6rem;display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;">
+                  ${isYt ? `
+                    <button type="button" class="btn btn-primary btn-sm play-video-trigger" data-url="${escapeHtml(r.url)}" data-title="${escapeHtml(r.title)}" data-channel="${escapeHtml(r.channel || '')}" style="font-size:0.75rem;padding:0.25rem 0.6rem;">
+                      ▶ Play Course
+                    </button>
+                    <a href="${escapeHtml(r.url)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="font-size:0.75rem;padding:0.25rem 0.6rem;text-decoration:none;">
+                      YouTube ↗
+                    </a>
+                  ` : `
+                    <a href="${escapeHtml(r.url)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="font-size:0.75rem;padding:0.25rem 0.6rem;text-decoration:none;">
+                      Open Docs ↗
+                    </a>
+                  `}
+                </div>
+              </div>
+            `}).join('')}
+          </div>
+        `;
+
+        // Attach video player triggers in Tab 2
+        container.querySelectorAll('.play-video-trigger').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const url = btn.getAttribute('data-url');
+            const title = btn.getAttribute('data-title');
+            const channel = btn.getAttribute('data-channel');
+            if (typeof openVideoModal === 'function') {
+              openVideoModal(url, title, channel);
+            } else {
+              window.open(url, '_blank', 'noopener,noreferrer');
+            }
+          });
+        });
+
+      } catch (err) {
+        container.innerHTML = `<div class="alert alert-error">Failed to load resources: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    // ── Load Tab 3: Roadmap ──
+    async function loadRoadmap() {
+      const container = document.getElementById('roadmap-tasks-container');
+      const genBtn = document.getElementById('generate-roadmap-btn');
+
+      try {
+        const res = await apiCall('GET', '/api/learning/roadmap');
+        let tasks = res.tasks || [];
+
+        if (tasks.length === 0) {
+          // Check if we can auto-generate from session analysis
+          const analysis = loadAnalysisFromSession();
+          if (analysis && analysis.learning_recommendations && analysis.learning_recommendations.length > 0) {
+            tasks = generateRoadmapTasksFromAnalysis(analysis);
+            // Save to backend
+            await apiCall('POST', '/api/learning/roadmap', { tasks });
+          }
+        }
+
+        if (tasks.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state-box">
+              <div class="empty-icon">🗺️</div>
+              <h3>No Roadmap Created Yet</h3>
+              <p style="color:var(--text-muted);margin-bottom:1.5rem;">Analyze your resume first to automatically generate a step-by-step weekly roadmap!</p>
+              <a href="/upload" class="btn btn-primary">Analyze Resume</a>
+            </div>
+          `;
+          return;
+        }
+
+        genBtn.style.display = 'inline-flex';
+        genBtn.onclick = async () => {
+          showLoading('Regenerating roadmap from latest analysis...');
+          const analysis = loadAnalysisFromSession();
+          if (analysis && analysis.learning_recommendations) {
+            const newTasks = generateRoadmapTasksFromAnalysis(analysis);
+            await apiCall('POST', '/api/learning/roadmap', { tasks: newTasks });
+            hideLoading();
+            showToast('Roadmap updated!', 'success');
+            loadRoadmap();
+          } else {
+            hideLoading();
+            showToast('Please analyze your resume first to generate a fresh roadmap', 'warning');
+          }
+        };
+
+        renderRoadmapTasks(tasks);
+
+      } catch (e) {
+        console.error('Roadmap load error:', e);
+        container.innerHTML = `<div class="alert alert-error">Failed to load roadmap tasks.</div>`;
+      }
+    }
+
+    function renderRoadmapTasks(tasks) {
+      const container = document.getElementById('roadmap-tasks-container');
+      const completedCount = tasks.filter(t => t.completed).length;
+      const pct = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
+
+      document.getElementById('roadmap-pct-text').textContent = pct + '%';
+      document.getElementById('roadmap-progress-bar').style.width = pct + '%';
+      document.getElementById('roadmap-status-text').textContent = `${completedCount} of ${tasks.length} tasks completed`;
+
+      container.innerHTML = tasks.map(t => {
+        const isDone = !!t.completed;
+        return `
+          <div class="roadmap-task-card ${isDone ? 'completed' : ''}" id="task-card-${t.id}">
+            <div class="task-check ${isDone ? 'checked' : ''}" onclick="toggleTask('${t.id}', ${!isDone})">
+              ${isDone ? '✓' : ''}
+            </div>
+            <div style="flex:1;">
+              <div class="week-tag">WEEK ${t.week || 1}: ${escapeHtml(t.skill || 'Skill Mastery')}</div>
+              <div style="font-weight:600;font-size:0.95rem;color:var(--text-primary);margin-bottom:0.25rem;">
+                ${escapeHtml(t.title || t.topics ? t.topics.slice(0, 2).join(', ') : 'Learn fundamentals')}
+              </div>
+              ${t.topics && t.topics.length > 0 ? `
+                <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.5rem;">
+                  Topics: ${t.topics.map(escapeHtml).join(' • ')}
+                </div>
+              ` : ''}
+              ${t.projectIdea ? `
+                <div style="font-size:0.8rem;color:#A78BFA;background:rgba(124,58,237,0.08);padding:0.4rem 0.65rem;border-radius:var(--radius-sm);display:inline-block;">
+                  🎯 Project: ${escapeHtml(t.projectIdea)}
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function toggleTask(taskId, setComplete) {
+      if (!setComplete) return; // Once completed keep it
+      try {
+        await apiCall('PATCH', `/api/learning/roadmap/${taskId}/complete`);
+        showToast('Task marked as completed! 🎉', 'success');
+        loadRoadmap();
+      } catch (err) {
+        showToast('Failed to update task: ' + err.message, 'error');
+      }
+    }
+
+    function generateRoadmapTasksFromAnalysis(analysis) {
+      const recs = analysis.learning_recommendations || [];
+      const tasks = [];
+      let week = 1;
+
+      recs.forEach(rec => {
+        tasks.push({
+          id: 'task_' + week + '_' + Math.random().toString(36).substr(2, 6),
+          week: week++,
+          skill: rec.skill,
+          title: `Master ${rec.skill} Fundamentals & Key Concepts`,
+          topics: (rec.topics_to_learn || []).slice(0, 4),
+          projectIdea: null,
+          completed: false,
+        });
+
+        if (rec.project_idea) {
+          tasks.push({
+            id: 'task_' + week + '_' + Math.random().toString(36).substr(2, 6),
+            week: week++,
+            skill: rec.skill,
+            title: `Build Hands-On Project: ${rec.project_idea}`,
+            topics: ['Hands-on coding', 'Git version control', 'Documentation'],
+            projectIdea: rec.project_idea,
+            completed: false,
+          });
+        }
+      });
+
+      // Add final review weeks
+      tasks.push({
+        id: 'task_' + week + '_update',
+        week: week++,
+        skill: 'Resume Optimization',
+        title: 'Update Resume with New Projects & Skills',
+        topics: ['Action verbs', 'Measurable metrics', 'ATS keywords'],
+        projectIdea: 'Add new GitHub repo links and project bullet points',
+        completed: false,
+      });
+
+      tasks.push({
+        id: 'task_' + week + '_recheck',
+        week: week++,
+        skill: 'Readiness Assessment',
+        title: 'Re-Analyze Resume on ResumeAI & Earn Readiness Certificate',
+        topics: ['ATS test', 'Category scoring', 'Job Match check'],
+        projectIdea: 'Achieve 90+ Score for official Certificate',
+        completed: false,
+      });
+
+      return tasks;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>

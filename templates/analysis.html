@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resume Evaluation Report — ResumeAI</title>
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <style>
+    .analysis-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .analysis-header h1 {
+      font-size: 2rem;
+      margin-bottom: 0.25rem;
+    }
+
+    /* Score Highlight Strip */
+    .score-summary-strip {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1.75rem 2rem;
+      box-shadow: var(--shadow-card);
+      display: grid;
+      grid-template-columns: auto 1fr 1fr auto;
+      gap: 2.5rem;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .editorial-metric-block strong {
+      display: block;
+      font-family: var(--font-serif);
+      font-size: 2.4rem;
+      font-weight: 500;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .editorial-metric-block span {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+
+    /* Tabs */
+    .editorial-tabs {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2rem;
+    }
+    .editorial-tab-btn {
+      padding: 0.65rem 1.15rem;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: var(--transition);
+      letter-spacing: 0.02em;
+    }
+    .editorial-tab-btn:hover { color: var(--text-primary); }
+    .editorial-tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .tab-view-panel { display: none; }
+    .tab-view-panel.active { display: block; }
+
+    /* Section-wise feedback cards */
+    .category-rubric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .rubric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.5rem;
+      box-shadow: var(--shadow-card);
+    }
+    .rubric-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.5rem;
+    }
+    .rubric-name {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .rubric-score {
+      font-family: var(--font-serif);
+      font-size: 1.15rem;
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .rubric-feedback {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      line-height: 1.45;
+      margin-top: 0.5rem;
+    }
+
+    /* Skills Table */
+    .skills-paper-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    .skills-paper-table th, .skills-paper-table td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .skills-paper-table th {
+      background: var(--bg-secondary);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 900px) {
+      .score-summary-strip {
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+      }
+    }
+    @media (max-width: 600px) {
+      .score-summary-strip {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    {% include 'partials/sidebar.html' %}
+
+    <!-- Main Content -->
+    <div class="main-content">
+      {% with topbar_label="Evaluation Report" %}
+        {% include 'partials/topbar.html' %}
+      {% endwith %}
+
+      <div class="page-content">
+        <!-- Top header -->
+        <div class="analysis-header">
+          <div>
+            <span class="section-tag">Audit Results</span>
+            <h1 id="candidate-doc-name">Resume Evaluation Report</h1>
+            <p id="analysis-timestamp" style="font-size:0.85rem;color:var(--text-muted);">Assessment completed across standard hiring benchmarks.</p>
+          </div>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <button id="download-pdf-report-btn" class="btn btn-secondary btn-sm" style="display:inline-flex;align-items:center;gap:0.35rem;">
+              <span>📄</span> Download Report (PDF)
+            </button>
+            <a href="/upload" class="btn btn-secondary btn-sm">Upload New Draft</a>
+            <a href="/compare" class="btn btn-secondary btn-sm">Compare Progress</a>
+            <a href="/certificate" id="cert-link-btn" class="btn btn-primary btn-sm" style="display:none;">View Certificate</a>
+          </div>
+        </div>
+
+        <!-- Score Strip (Dial + Clean Bars) -->
+        <div class="score-summary-strip">
+          <!-- Overall Dial -->
+          <div id="overall-dial-box" style="text-align:center;">
+            <!-- Injected by renderCircleProgress -->
+          </div>
+
+          <!-- ATS Score -->
+          <div class="editorial-metric-block">
+            <span>ATS Compatibility</span>
+            <strong id="metric-ats">0%</strong>
+            <div class="progress-bar-wrap" style="margin-top:0.4rem;">
+              <div id="metric-ats-bar" class="progress-bar" style="width:0%;"></div>
+            </div>
+          </div>
+
+          <!-- Readiness -->
+          <div class="editorial-metric-block">
+            <span>Readiness Benchmark</span>
+            <div id="metric-status" style="margin:0.25rem 0;">—</div>
+            <div style="font-size:0.8rem;color:var(--text-secondary);" id="metric-readiness-sub">
+              Target for certification: 90 / 100
+            </div>
+          </div>
+
+          <!-- Action CTA -->
+          <div>
+            <a href="/job-match" class="btn btn-outline btn-sm">Test Job Fit →</a>
+          </div>
+        </div>
+
+        <!-- Editorial Tabs -->
+        <div class="editorial-tabs">
+          <button class="editorial-tab-btn active" data-tab="overview">Rubric Overview</button>
+          <button class="editorial-tab-btn" data-tab="skills">Extracted Skills</button>
+          <button class="editorial-tab-btn" data-tab="recommendations">Learning & Videos</button>
+          <button class="editorial-tab-btn" data-tab="ats">ATS Parsing</button>
+          <button class="editorial-tab-btn" data-tab="enhanced" style="color:var(--accent); font-weight:700;">✨ AI Enhanced Resume</button>
+        </div>
+
+        <!-- TAB 1: Rubric Overview (Section-wise cards) -->
+        <div id="tab-overview" class="tab-view-panel active">
+          <div class="category-rubric-grid" id="rubric-grid-cards">
+            <!-- Injected by JS -->
+          </div>
+
+          <div class="card" style="margin-top:1.5rem;">
+            <h3 style="margin-bottom:0.75rem;font-size:1.15rem;">Key Recommendations</h3>
+            <ul id="key-suggestions-list" style="padding-left:1.25rem;font-size:0.9rem;line-height:1.6;color:var(--text-secondary);">
+              <!-- Injected by JS -->
+            </ul>
+          </div>
+        </div>
+
+        <!-- TAB 2: Extracted Skills -->
+        <div id="tab-skills" class="tab-view-panel">
+          <div class="card">
+            <h3 style="margin-bottom:1rem;font-size:1.15rem;">Evidence-Based Skill Inventory</h3>
+            <div style="overflow-x:auto;">
+              <table class="skills-paper-table">
+                <thead>
+                  <tr>
+                    <th>Competency</th>
+                    <th>Evidence Score</th>
+                    <th>Level</th>
+                    <th>Context Found</th>
+                  </tr>
+                </thead>
+                <tbody id="skills-table-body">
+                  <!-- Injected by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: Recommendations & Free Resources -->
+        <div id="tab-recommendations" class="tab-view-panel">
+          <div id="recommendations-container" style="display:flex;flex-direction:column;gap:1rem;">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+
+        <!-- TAB 4: ATS Parsing -->
+        <div id="tab-ats" class="tab-view-panel">
+          <div class="card">
+            <h3 style="margin-bottom:1rem;font-size:1.15rem;">ATS Parser Integrity Review</h3>
+            <div id="ats-issues-box" style="margin-bottom:1.5rem;"></div>
+            
+            <h4 style="margin-bottom:0.5rem;font-size:0.95rem;">Extracted Keywords</h4>
+            <div id="ats-keywords-cloud" style="display:flex;flex-wrap:wrap;gap:0.4rem;"></div>
+          </div>
+        </div>
+
+        <!-- TAB 5: AI Enhanced Resume -->
+        <div id="tab-enhanced" class="tab-view-panel">
+          <!-- Top summary banner -->
+          <div class="card" style="margin-bottom:1.5rem; background:var(--bg-card-subtle); border-left:4px solid var(--accent);">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+              <div style="flex:1; min-width:280px;">
+                <span class="badge badge-green" style="margin-bottom:0.4rem;">✨ AI Auto-Optimized Draft</span>
+                <h2 style="font-size:1.4rem; margin:0.35rem 0;" id="enhanced-headline">Senior Software Engineer</h2>
+                <p style="font-size:0.9rem; color:var(--text-secondary); max-width:750px; line-height:1.55;" id="enhanced-summary-text">
+                  Loading executive summary...
+                </p>
+              </div>
+              <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-self:flex-start;">
+                <button type="button" id="copy-enhanced-btn" class="btn btn-outline btn-sm" style="display:flex;align-items:center;gap:0.4rem;">
+                  <span>📋</span> Copy Text
+                </button>
+                <button type="button" id="download-enhanced-btn" class="btn btn-secondary btn-sm" style="display:flex;align-items:center;gap:0.4rem;">
+                  <span>💾</span> Download (.md)
+                </button>
+                <button type="button" id="print-enhanced-btn" class="btn btn-primary btn-sm" style="display:flex;align-items:center;gap:0.4rem;">
+                  <span>🖨️</span> Print / Save as PDF
+                </button>
+              </div>
+            </div>
+            
+            <!-- What was improved -->
+            <div style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border);">
+              <h4 style="font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted); margin-bottom:0.5rem;">Key Enhancements Applied by AI</h4>
+              <ul id="enhanced-improvements-list" style="margin:0; padding-left:1.25rem; font-size:0.86rem; color:var(--text-secondary); line-height:1.6;">
+                <li>Replaced passive verbs with executive STAR achievement phrases.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Before vs After Rewritten Bullets -->
+          <div class="card" style="margin-bottom:1.5rem;">
+            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:1.25rem; flex-wrap:wrap; gap:0.5rem;">
+              <div>
+                <h3 style="font-size:1.15rem; margin-bottom:0.2rem;">Before vs After — High-Impact STAR Rewrites</h3>
+                <p style="font-size:0.82rem; color:var(--text-muted); margin:0;">Transforming plain job duties into measurable achievements with action verbs and metrics</p>
+              </div>
+            </div>
+            <div id="enhanced-bullets-container" style="display:flex; flex-direction:column; gap:1.25rem;">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+
+          <!-- Full Formatted Markdown Preview -->
+          <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+              <h3 style="font-size:1.15rem; margin:0;">Complete ATS-Ready Document</h3>
+              <button type="button" class="btn btn-outline btn-sm" id="copy-markdown-btn">Copy Text</button>
+            </div>
+            <pre id="enhanced-markdown-preview" style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius-sm); padding:1.25rem; font-family:monospace; font-size:0.84rem; line-height:1.6; white-space:pre-wrap; word-break:break-word; max-height:550px; overflow-y:auto; color:var(--text-primary);"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include 'partials/firebase_boot.html' %}
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await onAuthRequired();
+      if (!user) return;
+
+      // Tab switcher
+      const tabBtns = document.querySelectorAll('.editorial-tab-btn');
+      const tabPanels = document.querySelectorAll('.tab-view-panel');
+      tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          tabBtns.forEach(b => b.classList.remove('active'));
+          tabPanels.forEach(p => p.classList.remove('active'));
+          btn.classList.add('active');
+          document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        });
+      });
+
+      // Load analysis data
+      const urlParams = new URLSearchParams(window.location.search);
+      const queryId = urlParams.get('id');
+
+      let analysis = null;
+      if (queryId) {
+        try {
+          const res = await apiCall('GET', `/api/analysis/${queryId}`);
+          analysis = res.fullAnalysis || res;
+        } catch (e) {}
+      }
+
+      if (!analysis) {
+        analysis = loadAnalysisFromSession();
+      }
+
+      if (!analysis) {
+        window.location.href = '/upload';
+        return;
+      }
+
+      populateAnalysis(analysis);
+
+      // PDF Audit Report download handler
+      const pdfReportBtn = document.getElementById('download-pdf-report-btn');
+      if (pdfReportBtn) {
+        pdfReportBtn.addEventListener('click', async () => {
+          const evalId = queryId || (analysis && (analysis.evalId || analysis.eval_id || analysis.analysis_id));
+          if (!evalId) {
+            showToast('Evaluation ID not found for download.', 'warning');
+            return;
+          }
+          try {
+            pdfReportBtn.disabled = true;
+            pdfReportBtn.textContent = 'Generating PDF...';
+            const token = await getAuthToken();
+            const res = await fetch(`/api/analysis/${evalId}/report-pdf`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error('Failed to generate report PDF');
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ResumeAI_Audit_Report_${evalId.slice(0, 8)}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('Report PDF downloaded successfully!', 'success');
+          } catch (err) {
+            showToast('Error downloading report PDF: ' + err.message, 'error');
+          } finally {
+            pdfReportBtn.disabled = false;
+            pdfReportBtn.innerHTML = '<span>📄</span> Download Report (PDF)';
+          }
+        });
+      }
+    });
+
+    function populateAnalysis(a) {
+      // Basic titles
+      const filename = a.filename || (a.basic_info && a.basic_info.name ? `${a.basic_info.name}'s Evaluation` : 'Resume Evaluation Report');
+      document.getElementById('candidate-doc-name').textContent = filename;
+
+      // Overall Score Dial
+      const overall = a.overallScore !== undefined ? a.overallScore : (a.overall_score || 0);
+      renderCircleProgress('overall-dial-box', overall, 100, 110);
+
+      // ATS
+      const ats = a.atsScore !== undefined ? a.atsScore : (a.ats_score || 0);
+      document.getElementById('metric-ats').textContent = ats + '%';
+      document.getElementById('metric-ats-bar').style.width = ats + '%';
+
+      // Status
+      const st = a.readinessStatus || a.readiness_status || (overall >= 90 ? 'Resume Ready' : 'Improving');
+      document.getElementById('metric-status').innerHTML = readinessBadge(st);
+
+      if (overall >= 90 && ats >= 90) {
+        document.getElementById('cert-link-btn').style.display = 'inline-flex';
+      }
+
+      // Rubric Cards
+      const rubricGrid = document.getElementById('rubric-grid-cards');
+      const catLabels = {
+        ats_compatibility: 'ATS Parsing & Structure',
+        skills: 'Technical Skills Evidence',
+        projects_experience: 'Projects & Work Depth',
+        education: 'Academic Background',
+        achievements: 'Measurable Outcomes',
+        structure: 'Document Structure & Flow',
+        readability: 'Clarity & Professional Tone'
+      };
+      const catMaxes = {
+        ats_compatibility: 20,
+        skills: 20,
+        projects_experience: 20,
+        education: 10,
+        achievements: 10,
+        structure: 10,
+        readability: 10
+      };
+
+      const cats = a.categoryScores || a.category_scores || a.scores || {};
+      const feedback = a.category_feedback || {};
+
+      rubricGrid.innerHTML = Object.keys(catLabels).map(key => {
+        const score = cats[key] || 0;
+        const max = catMaxes[key] || 10;
+        return `
+          <div class="rubric-card">
+            <div class="rubric-top">
+              <span class="rubric-name">${catLabels[key]}</span>
+              <span class="rubric-score">${score} / ${max}</span>
+            </div>
+            <div class="progress-bar-wrap">
+              <div class="progress-bar" style="width:${(score/max)*100}%;"></div>
+            </div>
+            <div class="rubric-feedback">${escapeHtml(feedback[key] || 'Evaluated cleanly against hiring standards.')}</div>
+          </div>
+        `;
+      }).join('');
+
+      // Suggestions
+      const suggList = document.getElementById('key-suggestions-list');
+      const suggestions = a.suggestions || [
+        'Add measurable metrics to project outcomes.',
+        'Group technical proficiencies under explicit category headings.'
+      ];
+      suggList.innerHTML = suggestions.map(s => `<li>${escapeHtml(s)}</li>`).join('');
+
+      // Skills Table
+      const skillsBody = document.getElementById('skills-table-body');
+      let skillsList = a.skills || [];
+      if (typeof skillsList === 'object' && !Array.isArray(skillsList)) {
+        skillsList = [
+          ...(skillsList.strong || []).map(s => ({ name: s, level: 'Advanced', evidence_score: 85, reason: 'Strong evidence' })),
+          ...(skillsList.improve || []).map(s => ({ name: s, level: 'Intermediate', evidence_score: 55, reason: 'Needs improvement' })),
+          ...(skillsList.missing || []).map(s => ({ name: s, level: 'Beginner', evidence_score: 25, reason: 'Competency gap' }))
+        ];
+      }
+      skillsBody.innerHTML = skillsList.map(sk => `
+        <tr>
+          <td><strong>${escapeHtml(sk.name || sk)}</strong></td>
+          <td>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <span>${sk.evidence_score || 50}/100</span>
+              <div class="progress-bar-wrap" style="width:70px;height:4px;">
+                <div class="progress-bar" style="width:${sk.evidence_score || 50}%;"></div>
+              </div>
+            </div>
+          </td>
+          <td>${skillLevelBadge(sk.level || 'Intermediate')}</td>
+          <td style="color:var(--text-secondary);font-size:0.8rem;">${escapeHtml(sk.reason || 'Evaluated from resume content')}</td>
+        </tr>
+      `).join('');
+
+      // Recommendations & Guaranteed YouTube Video Tutorials
+      const recsBox = document.getElementById('recommendations-container');
+      const recs = a.learningRecommendations || a.learning_recommendations || a.roadmap || [];
+      recsBox.innerHTML = recs.map(r => {
+        const skillName = r.skill || r.task || 'Skill Improvement';
+        const yt = r.youtube_video || {
+          title: `${skillName} Full Course & Practical Guide`,
+          channel: 'freeCodeCamp / Top Creator',
+          url: `https://www.youtube.com/results?search_query=${encodeURIComponent(skillName + ' full course tutorial for beginners')}`,
+          duration: '1-3 hours'
+        };
+
+        return `
+        <div class="card" style="border-left: 3px solid var(--accent); margin-bottom: 1rem;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;flex-wrap:wrap;gap:0.5rem;">
+            <div>
+              <strong style="font-size:1.15rem;color:var(--text-primary);">${escapeHtml(skillName)}</strong>
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.15rem;">Identified Skill Gap & Priority Improvement</div>
+            </div>
+            <span class="badge ${r.priority === 'High' ? 'badge-rust' : 'badge-amber'}">${r.priority || 'High'} Priority</span>
+          </div>
+
+          <p style="font-size:0.88rem;margin-bottom:1rem;color:var(--text-secondary);line-height:1.5;">${escapeHtml(r.why_improve || r.whyImprove || 'Strengthening this competency will directly raise ATS match and recruiter interview callbacks.')}</p>
+
+          <!-- 🎥 Curated YouTube Tutorial Card -->
+          <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius-sm); padding:1rem; margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+            <div style="display:flex; align-items:center; gap:0.75rem;">
+              <div style="width:38px; height:38px; border-radius:var(--radius-xs); background:#E50914; color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0;">
+                ▶
+              </div>
+              <div>
+                <div style="font-size:0.88rem; font-weight:600; color:var(--text-primary); line-height:1.3;">${escapeHtml(yt.title)}</div>
+                <div style="font-size:0.76rem; color:var(--text-muted); margin-top:0.2rem;">
+                  Channel: <strong style="color:var(--text-secondary);">${escapeHtml(yt.channel || 'Top Creator')}</strong> • Duration: ${escapeHtml(yt.duration || '1-3 hours')} • <span class="badge badge-green" style="font-size:0.68rem;padding:0.1rem 0.4rem;">100% Free</span>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+              <button type="button" class="btn btn-primary btn-sm play-video-trigger" data-url="${escapeHtml(yt.url)}" data-title="${escapeHtml(yt.title)}" data-channel="${escapeHtml(yt.channel || 'Top Creator')}" style="display:inline-flex; align-items:center; gap:0.35rem;">
+                ▶ Play Video
+              </button>
+              <a href="${escapeHtml(yt.url)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="display:inline-flex; align-items:center; gap:0.35rem; text-decoration:none;">
+                Watch on YouTube ↗
+              </a>
+            </div>
+          </div>
+
+          ${r.project_idea || r.projectIdea ? `
+            <div style="padding:0.75rem 1rem;background:var(--bg-card-subtle);border:1px dashed var(--border);border-radius:var(--radius-xs);font-size:0.84rem;margin-bottom:0.75rem;line-height:1.45;">
+              <strong style="color:var(--accent);">🛠️ Hands-on Practice Project:</strong> ${escapeHtml(r.project_idea || r.projectIdea)}
+            </div>
+          ` : ''}
+
+          <div style="display:flex; justify-content:flex-end;">
+            <a href="/learning?skill=${encodeURIComponent(skillName)}" class="btn btn-secondary btn-sm" style="font-size:0.78rem;">Browse More Free Docs & Roadmap →</a>
+          </div>
+        </div>
+      `}).join('');
+
+      // Attach video modal listeners in Tab 3
+      recsBox.querySelectorAll('.play-video-trigger').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const url = btn.getAttribute('data-url');
+          const title = btn.getAttribute('data-title');
+          const channel = btn.getAttribute('data-channel');
+          if (typeof openVideoModal === 'function') {
+            openVideoModal(url, title, channel);
+          } else {
+            window.open(url, '_blank', 'noopener,noreferrer');
+          }
+        });
+      });
+
+      // Populate Tab 5: AI Enhanced Resume
+      const enh = a.enhancedResume || a.enhanced_resume || null;
+      if (enh) {
+        document.getElementById('enhanced-headline').textContent = enh.professional_headline || 'Senior Software Engineer';
+        document.getElementById('enhanced-summary-text').textContent = enh.ats_summary || 'ATS-cleared executive summary.';
+
+        const impList = document.getElementById('enhanced-improvements-list');
+        const imps = enh.key_improvements || [
+          'Rewrote project descriptions to quantifiable STAR action verbs.',
+          'Injected critical missing ATS keywords for target role alignment.',
+          'Optimized section formatting for 99%+ ATS parser readability.'
+        ];
+        impList.innerHTML = imps.map(im => `<li>${escapeHtml(im)}</li>`).join('');
+
+        const bulletsBox = document.getElementById('enhanced-bullets-container');
+        const bullets = enh.rewritten_bullets || [];
+        bulletsBox.innerHTML = bullets.map((b, i) => `
+          <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius-sm); padding:1rem;">
+            <div style="font-size:0.76rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted); margin-bottom:0.6rem;">
+              Bullet Rewrite #${i+1}
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:0.75rem;">
+              <div style="background:var(--bg-card); border-left:3px solid var(--color-danger); padding:0.75rem; border-radius:var(--radius-xs);">
+                <div style="font-size:0.72rem; font-weight:700; color:var(--color-danger); text-transform:uppercase; margin-bottom:0.25rem;">Before (Plain / Weak)</div>
+                <div style="font-size:0.84rem; color:var(--text-secondary); line-height:1.45;">${escapeHtml(b.original)}</div>
+              </div>
+              <div style="background:var(--bg-card); border-left:3px solid var(--color-success); padding:0.75rem; border-radius:var(--radius-xs);">
+                <div style="font-size:0.72rem; font-weight:700; color:var(--color-success); text-transform:uppercase; margin-bottom:0.25rem;">After (STAR / Quantified)</div>
+                <div style="font-size:0.84rem; color:var(--text-primary); font-weight:500; line-height:1.45;">${escapeHtml(b.improved)}</div>
+              </div>
+            </div>
+            ${b.impact ? `
+              <div style="font-size:0.78rem; color:var(--text-muted); font-style:italic;">
+                💡 Recruiter Advantage: ${escapeHtml(b.impact)}
+              </div>
+            ` : ''}
+          </div>
+        `).join('');
+
+        const markdownText = enh.full_enhanced_markdown || '# Enhanced Resume';
+        document.getElementById('enhanced-markdown-preview').textContent = markdownText;
+
+        // Copy button handlers
+        const copyBtn = document.getElementById('copy-enhanced-btn');
+        const copyMdBtn = document.getElementById('copy-markdown-btn');
+        const handleCopy = () => {
+          navigator.clipboard.writeText(markdownText).then(() => {
+            showToast('Enhanced resume copied to clipboard!', 'success');
+          }).catch(() => {
+            showToast('Could not copy text to clipboard.', 'error');
+          });
+        };
+        if (copyBtn) copyBtn.addEventListener('click', handleCopy);
+        if (copyMdBtn) copyMdBtn.addEventListener('click', handleCopy);
+
+        // Download button handler
+        const dlBtn = document.getElementById('download-enhanced-btn');
+        if (dlBtn) {
+          dlBtn.addEventListener('click', () => {
+            const blob = new Blob([markdownText], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const aLink = document.createElement('a');
+            aLink.href = url;
+            aLink.download = 'Enhanced_ATS_Resume.md';
+            document.body.appendChild(aLink);
+            aLink.click();
+            document.body.removeChild(aLink);
+            URL.revokeObjectURL(url);
+            showToast('Enhanced resume downloaded!', 'success');
+          });
+        }
+
+        // Print / Save as PDF handler
+        const printBtn = document.getElementById('print-enhanced-btn');
+        if (printBtn) {
+          printBtn.addEventListener('click', () => {
+            const headline = enh.professional_headline || 'Professional Resume';
+            const printWin = window.open('', '_blank', 'width=800,height=900');
+            const cleanContent = escapeHtml(markdownText)
+              .replace(/^# (.*$)/gim, '<h1 style="font-size:22px;border-bottom:2px solid #1F4D3A;padding-bottom:4px;margin-bottom:12px;">$1</h1>')
+              .replace(/^## (.*$)/gim, '<h2 style="font-size:16px;color:#1F4D3A;text-transform:uppercase;letter-spacing:1px;margin-top:18px;margin-bottom:6px;border-bottom:1px solid #ddd;">$1</h2>')
+              .replace(/^### (.*$)/gim, '<h3 style="font-size:14px;margin-top:10px;margin-bottom:4px;">$1</h3>')
+              .replace(/^\- (.*$)/gim, '<li style="margin-bottom:4px;line-height:1.45;">$1</li>');
+
+            printWin.document.write(`
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <title>${headline} — ATS Resume</title>
+                <style>
+                  @page { margin: 18mm; size: A4 portrait; }
+                  body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; line-height: 1.5; color: #111; max-width: 800px; margin: 0 auto; padding: 20px; }
+                  h1, h2, h3 { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+                  ul { padding-left: 20px; margin-top: 4px; margin-bottom: 8px; }
+                  @media print {
+                    body { padding: 0; }
+                    .no-print { display: none; }
+                  }
+                </style>
+              </head>
+              <body>
+                <div class="no-print" style="background:#f4f4f4;padding:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;border-radius:4px;font-family:sans-serif;font-size:13px;">
+                  <span>Print preview: Click Print or press Ctrl+P to save as PDF.</span>
+                  <button onclick="window.print()" style="padding:6px 14px;background:#1F4D3A;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;">Print / Save as PDF</button>
+                </div>
+                <div>${cleanContent}</div>
+              </body>
+              </html>
+            `);
+            printWin.document.close();
+            setTimeout(() => { printWin.print(); }, 400);
+          });
+        }
+      }
+
+      // ATS Issues
+      const atsIssuesBox = document.getElementById('ats-issues-box');
+      const issues = a.ats_issues || a.atsIssues || ['Ensure headings use standard naming conventions (Experience, Education, Skills).'];
+      atsIssuesBox.innerHTML = issues.map(iss => `
+        <div class="alert alert-warning" style="margin-bottom:0.5rem;">
+          ${escapeHtml(iss)}
+        </div>
+      `).join('');
+
+      // Keywords
+      const kwBox = document.getElementById('ats-keywords-cloud');
+      const kws = a.ats_keywords || a.atsKeywords || ['Engineering', 'Design', 'Architecture', 'Python', 'Git'];
+      kwBox.innerHTML = kws.map(k => `<span class="skill-tag">${escapeHtml(k)}</span>`).join('');
+    }
+  </script>
+</body>
+</html>

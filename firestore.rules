@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── User private data ───────────────────────────────────────
+    match /users/{userId} {
+      // Only the authenticated user can read/write their own profile
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Evaluations & Analyses — private to owner
+      match /evaluations/{evalId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /analyses/{analysisId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Roadmap tasks — private to owner
+      match /roadmap/{taskId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Skill progress — private to owner
+      match /skill_progress/{skillId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Job match results — private to owner
+      match /job_matches/{matchId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // User's certificate copies — private to owner
+      match /certificates/{certId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // ─── Public certificate registry ────────────────────────────
+    // Anyone can verify a certificate by ID.
+    // Only the backend (Firebase Admin SDK, which bypasses rules) can write here.
+    match /certificates/{certId} {
+      allow read: if true;
+      allow write: if false; // Backend Admin SDK bypasses this
+    }
+  }
+}

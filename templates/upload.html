@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload Resume for Evaluation — ResumeAI</title>
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <style>
+    .upload-page-header {
+      margin-bottom: 2rem;
+      text-align: left;
+    }
+    .upload-page-header h1 {
+      font-size: 2rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .upload-layout {
+      display: grid;
+      grid-template-columns: 1.35fr 0.65fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    /* Paper Upload Box */
+    .stationery-upload-zone {
+      border: 1px dashed var(--border-input);
+      border-radius: var(--radius-sm);
+      padding: 3.5rem 2rem;
+      text-align: center;
+      background: var(--bg-card-subtle);
+      cursor: pointer;
+      position: relative;
+      transition: var(--transition);
+    }
+    .stationery-upload-zone:hover, .stationery-upload-zone.dragover {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+    .stationery-upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .upload-action-text {
+      font-family: var(--font-serif);
+      font-size: 1.25rem;
+      color: var(--text-primary);
+      margin-bottom: 0.35rem;
+    }
+    .upload-hint {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    /* Selected File Tag */
+    .file-selected-box {
+      margin-top: 1.25rem;
+      padding: 0.85rem 1rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Editorial Step Progress */
+    .progress-flow {
+      margin: 1.5rem 0;
+      padding: 1.25rem 1.5rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      display: none;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    .flow-steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      position: relative;
+    }
+    .flow-step-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      padding: 0.6rem 0.75rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      transition: var(--transition);
+    }
+    .flow-step-item .step-indicator {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+    .flow-step-item.active {
+      border-color: var(--accent);
+      background: var(--accent-light);
+      color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+    .flow-step-item.active .step-indicator {
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .flow-step-item.completed {
+      border-color: var(--color-success-border);
+      background: var(--color-success-bg);
+      color: var(--color-success);
+    }
+    .flow-step-item.completed .step-indicator {
+      color: var(--color-success);
+    }
+    .stepper-progress-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: var(--radius-full);
+      margin-top: 1rem;
+      overflow: hidden;
+    }
+    .stepper-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      border-radius: var(--radius-full);
+      transition: width 0.4s ease;
+    }
+
+    /* Benchmark Aside Box */
+    .benchmarks-aside {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-card);
+    }
+    .benchmark-item {
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 0.85rem;
+    }
+    .benchmark-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .benchmark-item strong {
+      display: block;
+      color: var(--text-primary);
+      margin-bottom: 0.2rem;
+    }
+
+    @media (max-width: 900px) {
+      .upload-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    {% include 'partials/sidebar.html' %}
+
+    <!-- Main Content -->
+    <div class="main-content">
+      {% with topbar_label="Resume Assessment" %}
+        {% include 'partials/topbar.html' %}
+      {% endwith %}
+
+      <div class="page-content">
+        <div class="upload-page-header">
+          <span class="section-tag">Document Intake</span>
+          <h1>Submit resume for evaluation</h1>
+          <p>Upload a standard PDF or DOCX file to run benchmark checks and skill extraction.</p>
+        </div>
+
+        <div id="upload-alert" class="alert alert-error" style="display:none;"></div>
+
+        <div class="upload-layout">
+          <!-- Left Column: Upload Form -->
+          <div class="card">
+            <!-- Dropzone -->
+            <div id="upload-zone" class="stationery-upload-zone">
+              <input type="file" id="resume-file" accept=".pdf,.docx,.doc" />
+              <div style="margin-bottom:0.75rem;">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="12" y1="18" x2="12" y2="12"></line>
+                  <line x1="9" y1="15" x2="15" y2="15"></line>
+                </svg>
+              </div>
+              <div class="upload-action-text">Select or drag resume document</div>
+              <div class="upload-hint">Supported formats: PDF or DOCX (maximum 10 MB)</div>
+            </div>
+
+            <!-- Instant Sample Resume Card -->
+            <div id="sample-resume-card" style="display: flex; align-items: center; justify-content: space-between; margin-top: 1rem; padding: 0.85rem 1.15rem; background: var(--bg-card-subtle); border: 1px dashed var(--border); border-radius: var(--radius-sm); gap: 0.75rem; flex-wrap: wrap;">
+              <div style="display:flex; align-items:center; gap:0.75rem;">
+                <div style="width:32px; height:32px; border-radius:var(--radius-xs); background:var(--accent-light); color:var(--accent); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.95rem;">⚡</div>
+                <div>
+                  <div style="font-size:0.86rem; font-weight:600; color:var(--text-primary);">Don't have a resume file on hand?</div>
+                  <div style="font-size:0.75rem; color:var(--text-muted);">Try with pre-loaded Software Engineer sample draft</div>
+                </div>
+              </div>
+              <button type="button" id="load-sample-btn" class="btn btn-outline btn-sm" style="font-size:0.78rem; font-weight:600; white-space:nowrap;">
+                Try Sample Resume ➔
+              </button>
+            </div>
+
+            <!-- Selected File Preview -->
+            <div id="file-preview" class="file-selected-box" style="display:none;">
+              <div>
+                <strong id="preview-filename" style="font-size:0.9rem;display:block;color:var(--text-primary);">resume.pdf</strong>
+                <span id="preview-filesize" style="font-size:0.75rem;color:var(--text-muted);">150 KB</span>
+              </div>
+              <button type="button" id="remove-file-btn" class="btn btn-secondary btn-sm" style="padding:0.25rem 0.5rem;font-size:0.75rem;">Remove</button>
+            </div>
+
+            <!-- Optional Context Form -->
+            <div style="margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1.25rem;">
+              <div style="font-family:var(--font-serif);font-size:1.05rem;margin-bottom:1rem;">Optional Evaluation Context</div>
+              
+              <div class="form-group">
+                <label class="form-label" for="career-goal">Target Role / Specialization</label>
+                <select id="career-goal" class="form-select">
+                  <option value="">General Assessment (Standard Benchmark)</option>
+                  <option value="Software Developer">Software Developer</option>
+                  <option value="Python Developer">Python Developer</option>
+                  <option value="Web Developer">Web Developer (Frontend / Full Stack)</option>
+                  <option value="Data Analyst">Data Analyst</option>
+                  <option value="Android Developer">Android Developer</option>
+                  <option value="DevOps Engineer">DevOps & Cloud Engineer</option>
+                  <option value="UI/UX Designer">UI/UX Designer</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="experience-level">Experience Level</label>
+                <select id="experience-level" class="form-select">
+                  <option value="Student/Fresher">Student / Recent Graduate (0 years)</option>
+                  <option value="0-1 Year">Early Career (0–1 year)</option>
+                  <option value="1-3 Years">Junior Professional (1–3 years)</option>
+                  <option value="3-5 Years">Mid-Level Professional (3–5 years)</option>
+                  <option value="5+ Years">Senior Professional (5+ years)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Step Progress State (When Processing) -->
+            <div id="progress-flow" class="progress-flow">
+              <div class="flow-steps">
+                <div id="step-upload" class="flow-step-item active">
+                  <span class="step-indicator">Step 01</span>
+                  <span>📄 Extracting Text</span>
+                </div>
+                <div id="step-skills" class="flow-step-item">
+                  <span class="step-indicator">Step 02</span>
+                  <span>🧩 Parsing Skills</span>
+                </div>
+                <div id="step-ai" class="flow-step-item">
+                  <span class="step-indicator">Step 03</span>
+                  <span>✨ Gemini AI Audit</span>
+                </div>
+                <div id="step-complete" class="flow-step-item">
+                  <span class="step-indicator">Step 04</span>
+                  <span>📊 Report Ready</span>
+                </div>
+              </div>
+              <div class="stepper-progress-bar">
+                <div id="stepper-fill" class="stepper-progress-fill" style="width: 25%;"></div>
+              </div>
+            </div>
+
+            <div style="margin-top:1.5rem;">
+              <button type="button" id="start-analysis-btn" class="btn btn-primary btn-full" disabled>
+                Begin Resume Evaluation
+              </button>
+            </div>
+          </div>
+
+          <!-- Right Column: Submission Guidelines -->
+          <aside class="benchmarks-aside">
+            <span class="section-tag">Guidelines</span>
+            <h3 style="margin-bottom:1rem;font-size:1.15rem;">Evaluation Parameters</h3>
+            
+            <div class="benchmark-item">
+              <strong>ATS Readability</strong>
+              Standard clean formatting with recognizable chronological sections and standard heading conventions.
+            </div>
+
+            <div class="benchmark-item">
+              <strong>Evidence-Based Scoring</strong>
+              Skills are measured through verified project usage, tenure, and context — not mere keyword lists.
+            </div>
+
+            <div class="benchmark-item">
+              <strong>Quantifiable Achievements</strong>
+              Reviewers prioritize measurable outcomes (percentages, performance gains, shipped products).
+            </div>
+
+            <div class="benchmark-item">
+              <strong>Privacy Standard</strong>
+              Documents are processed directly in-memory for evaluation without harvesting contact databases.
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include 'partials/firebase_boot.html' %}
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await onAuthRequired();
+      if (!user) return;
+
+      const fileInput = document.getElementById('resume-file');
+      const uploadZone = document.getElementById('upload-zone');
+      const filePreview = document.getElementById('file-preview');
+      const filenameEl = document.getElementById('preview-filename');
+      const filesizeEl = document.getElementById('preview-filesize');
+      const removeBtn = document.getElementById('remove-file-btn');
+      const startBtn = document.getElementById('start-analysis-btn');
+      const alertBox = document.getElementById('upload-alert');
+      const flowBox = document.getElementById('progress-flow');
+
+      let selectedFile = null;
+
+      function showError(msg) {
+        alertBox.textContent = msg;
+        alertBox.style.display = 'block';
+      }
+
+      function handleFile(file) {
+        if (!file) return;
+        const validExts = ['.pdf', '.docx', '.doc'];
+        const ext = '.' + file.name.split('.').pop().toLowerCase();
+        if (!validExts.includes(ext)) {
+          showError('Please upload a PDF or DOCX file.');
+          return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          showError('File exceeds the 10 MB limit.');
+          return;
+        }
+
+        alertBox.style.display = 'none';
+        selectedFile = file;
+        filenameEl.textContent = file.name;
+        filesizeEl.textContent = (file.size / 1024).toFixed(0) + ' KB';
+        filePreview.style.display = 'flex';
+        uploadZone.style.display = 'none';
+        startBtn.disabled = false;
+      }
+
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) handleFile(e.target.files[0]);
+      });
+
+      ['dragover', 'dragenter'].forEach(name => {
+        uploadZone.addEventListener(name, (e) => {
+          e.preventDefault();
+          uploadZone.classList.add('dragover');
+        });
+      });
+
+      ['dragleave', 'drop'].forEach(name => {
+        uploadZone.addEventListener(name, (e) => {
+          e.preventDefault();
+          uploadZone.classList.remove('dragover');
+        });
+      });
+
+      uploadZone.addEventListener('drop', (e) => {
+        if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+      });
+
+      const loadSampleBtn = document.getElementById('load-sample-btn');
+      const sampleCard = document.getElementById('sample-resume-card');
+      let sampleText = null;
+
+      const SAMPLE_RESUME = `Saurabh Kalamkar
+Full Stack Software Engineer | Pune, India | saurabh.kalamkar@example.com | +91 9876543210
+LinkedIn: linkedin.com/in/saurabh-kalamkar | GitHub: github.com/saurabh-dev
+
+SUMMARY
+Software Engineer with 3+ years of experience specializing in Python, Flask, RESTful APIs, and modern frontend frameworks. Strong background in scalable microservices, relational databases, and agile software development.
+
+TECHNICAL SKILLS
+- Languages: Python, JavaScript, SQL, HTML5, CSS3
+- Frameworks & Backend: Flask, FastAPI, Django, React, Node.js
+- Databases: PostgreSQL, MongoDB, MySQL, Redis
+- Developer Tools & DevOps: Git, Docker, GitHub Actions, Postman, Linux
+
+WORK EXPERIENCE
+Software Developer | NexGen Tech Solutions, Pune (2022 - Present)
+- Developed and maintained 15+ RESTful API endpoints using Flask and PostgreSQL, serving 100,000+ daily requests.
+- Integrated JWT authentication and role-based access control, reducing unauthorized access incidents by 40%.
+- Optimized database queries and indexed tables, cutting average response time from 350ms to 120ms.
+- Collaborated in a team of 6 engineers using Git and Agile Scrum methodologies with bi-weekly sprint cycles.
+
+Junior Developer | CodeCraft Studio (2021 - 2022)
+- Built interactive frontend dashboards in React communicating with backend REST services.
+- Wrote unit tests and automated test suites achieving 80% code coverage.
+- Assisted in deploying containerized microservices to cloud environments using Docker.
+
+EDUCATION
+Bachelor of Engineering (B.E.) in Computer Engineering
+Pune University, 2017 - 2021 | GPA: 8.4/10
+
+PROJECTS
+ResumeAI — AI Resume Analyzer Platform
+- Engineered an automated career portal using Python, Flask, and AI to parse and audit resumes.
+- Implemented real-time ATS scoring, keyword detection, and customized learning roadmaps.
+
+E-Commerce Analytics Engine
+- Built analytics dashboard visualizing sales velocity and inventory turnover across 5,000+ SKUs.
+- Integrated PostgreSQL window functions and Chart.js for data visualization.`;
+
+      if (loadSampleBtn) {
+        loadSampleBtn.addEventListener('click', () => {
+          sampleText = SAMPLE_RESUME;
+          selectedFile = null;
+          alertBox.style.display = 'none';
+          filenameEl.textContent = 'Sample_Software_Engineer_Resume.pdf';
+          filesizeEl.textContent = '120 KB (Preloaded Sample)';
+          filePreview.style.display = 'flex';
+          uploadZone.style.display = 'none';
+          if (sampleCard) sampleCard.style.display = 'none';
+          document.getElementById('career-goal').value = 'Software Developer';
+          document.getElementById('experience-level').value = '3-5 Years';
+          startBtn.disabled = false;
+        });
+      }
+
+      removeBtn.addEventListener('click', () => {
+        selectedFile = null;
+        sampleText = null;
+        fileInput.value = '';
+        filePreview.style.display = 'none';
+        uploadZone.style.display = 'block';
+        if (sampleCard) sampleCard.style.display = 'flex';
+        startBtn.disabled = true;
+      });
+
+      startBtn.addEventListener('click', async () => {
+        if (!selectedFile && !sampleText) return;
+
+        startBtn.disabled = true;
+        startBtn.textContent = 'Processing evaluation...';
+        flowBox.style.display = 'block';
+        alertBox.style.display = 'none';
+
+        try {
+          let extractedText = sampleText;
+          let filename = 'Sample_Software_Engineer_Resume.pdf';
+
+          const setStep = (stepId, fillPct) => {
+            const steps = ['step-upload', 'step-skills', 'step-ai', 'step-complete'];
+            const idx = steps.indexOf(stepId);
+            steps.forEach((s, i) => {
+              const el = document.getElementById(s);
+              if (!el) return;
+              el.classList.remove('active', 'completed');
+              if (i < idx) el.classList.add('completed');
+              else if (i === idx) el.classList.add('active');
+            });
+            const fill = document.getElementById('stepper-fill');
+            if (fill) fill.style.width = fillPct + '%';
+          };
+
+          if (selectedFile) {
+            // Step 1: Upload file & extract text
+            setStep('step-upload', 25);
+            const formData = new FormData();
+            formData.append('resume', selectedFile);
+
+            const uploadResult = await apiCall('POST', '/api/resume/upload', formData, true);
+            extractedText = uploadResult.extracted_text;
+            filename = selectedFile.name;
+          } else {
+            setStep('step-upload', 25);
+            await new Promise(r => setTimeout(r, 400));
+          }
+
+          // Step 2 & 3: Run benchmark AI evaluation
+          setStep('step-skills', 50);
+          await new Promise(r => setTimeout(r, 400));
+          
+          setStep('step-ai', 75);
+          const careerGoal = document.getElementById('career-goal').value;
+          const expLevel = document.getElementById('experience-level').value;
+
+          const analysis = await apiCall('POST', '/api/analysis/analyze', {
+            extracted_text: extractedText,
+            filename: filename,
+            career_goal: careerGoal,
+            experience_level: expLevel
+          });
+
+          // Step 4: Store and redirect
+          setStep('step-complete', 100);
+          await new Promise(r => setTimeout(r, 300));
+          saveAnalysisToSession(analysis);
+          const evalId = analysis.eval_id || analysis.evalId || analysis.analysis_id || '';
+          sessionStorage.setItem('currentAnalysisId', evalId);
+
+          window.location.href = '/analysis?id=' + evalId;
+        } catch (err) {
+          console.error(err);
+          showError(err.message || 'Evaluation process encountered an error. Please try again.');
+          startBtn.disabled = false;
+          startBtn.textContent = 'Begin Resume Evaluation';
+          flowBox.style.display = 'none';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

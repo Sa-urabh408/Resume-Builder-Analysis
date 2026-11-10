@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analysis History — ResumeAI</title>
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <style>
+    /* ── Page styles ── */
+    .history-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .history-header-left h1 { font-size: 1.75rem; margin-bottom: 0.25rem; }
+    .history-header-left p  { font-size: 0.875rem; color: var(--text-muted); }
+
+    .history-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    /* Analysis card */
+    .analysis-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+    .analysis-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--gradient-primary);
+    }
+    .analysis-card:hover {
+      border-color: var(--border-accent);
+      box-shadow: var(--shadow-glow-blue);
+    }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .card-number {
+      min-width: 42px;
+      height: 42px;
+      border-radius: var(--radius-md);
+      background: var(--gradient-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.875rem;
+      font-weight: 800;
+      color: white;
+      flex-shrink: 0;
+    }
+    .card-info { flex: 1; min-width: 0; }
+    .card-filename {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 0.35rem;
+    }
+    .card-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .card-date { font-size: 0.78rem; color: var(--text-muted); }
+    .card-goal { font-size: 0.78rem; color: var(--text-muted); }
+
+    .card-scores {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-shrink: 0;
+    }
+    .score-pill {
+      text-align: center;
+    }
+    .score-pill-val {
+      font-size: 1.5rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .score-pill-lbl {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .score-divider {
+      width: 1px;
+      height: 36px;
+      background: var(--border);
+    }
+
+    .card-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      padding: 1rem;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+    }
+    .card-stat-item { text-align: center; }
+    .card-stat-val {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .card-stat-lbl {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .card-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    /* Compare select mode */
+    .compare-select-bar {
+      display: none;
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-card);
+      border: 1px solid var(--border-accent);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.5rem;
+      box-shadow: var(--shadow-lg);
+      z-index: 200;
+      align-items: center;
+      gap: 1rem;
+    }
+    .compare-select-bar.visible { display: flex; }
+    .compare-slots {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .compare-slot {
+      min-width: 140px;
+      padding: 0.5rem 0.75rem;
+      background: var(--bg-secondary);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-md);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .compare-slot.filled {
+      border-color: var(--brand-blue);
+      color: var(--text-primary);
+      background: rgba(59,130,246,0.1);
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 5rem 2rem;
+    }
+    .empty-icon { font-size: 4rem; margin-bottom: 1.5rem; }
+    .empty-state h2 { margin-bottom: 0.75rem; font-size: 1.5rem; }
+    .empty-state p  { color: var(--text-muted); margin-bottom: 2rem; max-width: 400px; margin-left: auto; margin-right: auto; }
+
+    /* Skeleton loader */
+    .skeleton-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      animation: skeleton-pulse 1.5s ease-in-out infinite;
+    }
+    .skeleton-line {
+      height: 14px;
+      background: rgba(255,255,255,0.06);
+      border-radius: var(--radius-sm);
+      margin-bottom: 0.75rem;
+    }
+    @keyframes skeleton-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Confirm delete modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      max-width: 420px;
+      width: 90%;
+      text-align: center;
+    }
+    .modal-box h3 { margin-bottom: 0.75rem; }
+    .modal-box p  { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.5rem; }
+    .modal-actions { display: flex; gap: 1rem; justify-content: center; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  {% include 'partials/sidebar.html' %}
+
+  <!-- Main Content -->
+  <div class="main-content">
+    {% with topbar_label="Analysis History" %}
+      {% include 'partials/topbar.html' %}
+    {% endwith %}
+
+    <div class="page-content">
+
+      <!-- Header -->
+      <div class="history-header">
+        <div class="history-header-left">
+          <h1>Analysis History 📈</h1>
+          <p>All your resume analyses — view, compare, or delete.</p>
+        </div>
+        <div class="history-controls">
+          <span id="total-count" class="badge badge-blue">0 analyses</span>
+          <select id="sort-select" class="form-select" style="padding:0.5rem 0.75rem;border-radius:var(--radius-md);font-size:0.875rem;" onchange="applySortAndRender()">
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="score-high">Score: High → Low</option>
+            <option value="score-low">Score: Low → High</option>
+            <option value="ats-high">ATS: High → Low</option>
+          </select>
+          <button class="btn btn-secondary btn-sm" onclick="loadHistory()">🔄 Refresh</button>
+          <a href="/upload" class="btn btn-primary btn-sm">+ New Analysis</a>
+        </div>
+      </div>
+
+      <!-- List -->
+      <div id="history-container">
+        <!-- Skeleton placeholders while loading -->
+        <div id="skeleton-list" style="display:flex;flex-direction:column;gap:1rem;">
+          <div class="skeleton-card"><div class="skeleton-line" style="width:60%;"></div><div class="skeleton-line" style="width:40%;"></div><div class="skeleton-line" style="width:80%;height:8px;"></div></div>
+          <div class="skeleton-card"><div class="skeleton-line" style="width:55%;"></div><div class="skeleton-line" style="width:35%;"></div><div class="skeleton-line" style="width:75%;height:8px;"></div></div>
+          <div class="skeleton-card"><div class="skeleton-line" style="width:65%;"></div><div class="skeleton-line" style="width:45%;"></div><div class="skeleton-line" style="width:70%;height:8px;"></div></div>
+        </div>
+        <div id="analyses-list" style="display:none;flex-direction:column;gap:1rem;"></div>
+        <div id="empty-state" style="display:none;"></div>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /app-layout -->
+
+<!-- Compare Floating Bar -->
+<div id="compare-bar" class="compare-select-bar">
+  <div>
+    <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.4rem;">Select 2 analyses to compare:</div>
+    <div class="compare-slots">
+      <div id="slot-a" class="compare-slot">Slot A — pick one</div>
+      <div id="slot-b" class="compare-slot">Slot B — pick one</div>
+    </div>
+  </div>
+  <button class="btn btn-primary btn-sm" id="go-compare-btn" onclick="goCompare()" disabled>🔄 Compare</button>
+  <button class="btn btn-secondary btn-sm" onclick="cancelCompare()">✕ Cancel</button>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div id="delete-modal" class="modal-overlay">
+  <div class="modal-box">
+    <div style="font-size:2.5rem;margin-bottom:0.75rem;">🗑</div>
+    <h3>Delete Analysis?</h3>
+    <p>This will permanently remove this analysis. This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+      <button id="confirm-delete-btn" class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+{% include 'partials/firebase_boot.html' %}
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    // ── Auth ──────────────────────────────────────────────────────
+    if (typeof onAuthRequired === 'function') {
+      const user = await onAuthRequired('/login');
+      if (!user) return;
+      loadHistory();
+    }
+  });
+
+  // ── State ──────────────────────────────────────────────────────
+  let allAnalyses = [];
+  let pendingDeleteId = null;
+  let compareSelection = [];   // array of up to 2 {id, label}
+  let compareMode = false;
+
+  // ── Load history ───────────────────────────────────────────────
+  async function loadHistory() {
+    try {
+      const data = await apiCall('GET', '/api/analysis/history');
+      allAnalyses = data.analyses || data.history || [];
+      document.getElementById('skeleton-list').style.display = 'none';
+      document.getElementById('analyses-list').style.display = 'flex';
+      applySortAndRender();
+    } catch (err) {
+      document.getElementById('skeleton-list').style.display = 'none';
+      document.getElementById('analyses-list').style.display = 'flex';
+      document.getElementById('analyses-list').innerHTML =
+        `<div class="alert alert-error">Failed to load history: ${err.message}</div>`;
+    }
+  }
+
+  function applySortAndRender() {
+    const sort = document.getElementById('sort-select').value;
+    let sorted = [...allAnalyses];
+    const getCreated = a => new Date(a.createdAt || a.created_at || 0);
+    const getOverall = a => a.overallScore !== undefined ? a.overallScore : (a.overall_score || 0);
+    const getAts = a => a.atsScore !== undefined ? a.atsScore : (a.ats_score || 0);
+
+    if (sort === 'newest') sorted.sort((a,b) => getCreated(b) - getCreated(a));
+    if (sort === 'oldest') sorted.sort((a,b) => getCreated(a) - getCreated(b));
+    if (sort === 'score-high') sorted.sort((a,b) => getOverall(b) - getOverall(a));
+    if (sort === 'score-low')  sorted.sort((a,b) => getOverall(a) - getOverall(b));
+    if (sort === 'ats-high')   sorted.sort((a,b) => getAts(b) - getAts(a));
+    renderList(sorted);
+  }
+
+  function renderList(analyses) {
+    const container = document.getElementById('analyses-list');
+    const empty     = document.getElementById('empty-state');
+    const count     = document.getElementById('total-count');
+
+    count.textContent = `${analyses.length} evaluation${analyses.length === 1 ? '' : 's'}`;
+
+    if (!analyses.length) {
+      container.style.display = 'none';
+      empty.style.display = 'block';
+      empty.innerHTML = `
+        <div class="empty-state card">
+          <h2>No Evaluation History Yet</h2>
+          <p style="color:var(--text-secondary);margin-bottom:1.5rem;">Upload your resume to perform your first evaluation and start tracking your improvement.</p>
+          <a href="/upload" class="btn btn-primary">Evaluate Your Resume</a>
+        </div>`;
+      return;
+    }
+
+    container.style.display = 'flex';
+    empty.style.display = 'none';
+
+    container.innerHTML = analyses.map((a, idx) => {
+      const id    = a.evalId || a.analysisId || a.id;
+      const num   = analyses.length - idx;
+      const score = a.overallScore !== undefined ? a.overallScore : (a.overall_score || 0);
+      const ats   = a.atsScore !== undefined ? a.atsScore : (a.ats_score || 0);
+      const created = a.createdAt || a.created_at;
+      const status = a.readinessStatus || a.readiness_status || 'Improving';
+      const goal = a.careerGoal || a.targetRole || a.career_goal || '';
+
+      const isSelected = compareSelection.some(s => s.id === id);
+      return `
+        <div class="analysis-card" id="card-${id}" data-id="${id}">
+          <div class="card-top">
+            <div class="card-number">#${num}</div>
+            <div class="card-info">
+              <div class="card-filename" title="${escapeHtml(a.filename || 'Resume.pdf')}">${escapeHtml(a.filename || 'Resume Document')}</div>
+              <div class="card-meta">
+                ${readinessBadge(status)}
+                <span class="card-date">${formatDate(created)}</span>
+                ${goal ? `<span class="card-goal">Target: ${escapeHtml(goal)}</span>` : ''}
+              </div>
+            </div>
+            <div class="card-scores">
+              <div class="score-pill">
+                <div class="score-pill-val" style="color:var(--accent);">${score}</div>
+                <div class="score-pill-lbl">Overall</div>
+              </div>
+              <div class="score-divider"></div>
+              <div class="score-pill">
+                <div class="score-pill-val">${ats}%</div>
+                <div class="score-pill-lbl">ATS</div>
+              </div>
+            </div>
+          </div>
+          <div class="card-actions">
+            <a href="/analysis?id=${id}" class="btn btn-primary btn-sm">Review Report</a>
+            <button class="btn btn-secondary btn-sm" onclick="downloadPdfDirect('${id}')">📄 Download PDF</button>
+            <button class="btn btn-outline btn-sm" onclick="selectForCompare('${id}', '${escapeHtml(a.filename || 'Resume')}')">Compare</button>
+            <button class="btn btn-outline btn-sm" onclick="openDeleteModal('${id}')" style="color:var(--color-danger);border-color:var(--color-danger-border);">Delete</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderCardStats(a) {
+    const cats = a.category_scores || {};
+    const items = [
+      { label: 'Skills',        val: cats.skills ?? '—' },
+      { label: 'Experience',    val: cats.experience ?? '—' },
+      { label: 'Education',     val: cats.education ?? '—' },
+      { label: 'Formatting',    val: cats.formatting ?? cats.format ?? '—' },
+      { label: 'Missing Skills',val: Array.isArray(a.missing_skills) ? a.missing_skills.length : '—' },
+    ];
+    return `
+      <div class="card-stats">
+        ${items.map(i => `
+          <div class="card-stat-item">
+            <div class="card-stat-val">${i.val}</div>
+            <div class="card-stat-lbl">${i.label}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  // ── View ───────────────────────────────────────────────────────
+  async function viewAnalysis(id) {
+    try {
+      showLoading('Loading analysis...');
+      const data = await apiCall('GET', `/api/analysis/${id}`);
+      saveAnalysisToSession(data.analysis || data);
+      hideLoading();
+      window.location.href = `/analysis?id=${id}`;
+    } catch (err) {
+      hideLoading();
+      showToast(err.message || 'Failed to load analysis.', 'error');
+    }
+  }
+
+  // ── Compare selection ──────────────────────────────────────────
+  function selectForCompare(id, label) {
+    // If already selected, deselect
+    const existingIdx = compareSelection.findIndex(s => s.id === id);
+    if (existingIdx !== -1) {
+      compareSelection.splice(existingIdx, 1);
+      updateCompareBtnStyle(id, false);
+      updateCompareBar();
+      return;
+    }
+    if (compareSelection.length >= 2) {
+      showToast('You can only compare 2 analyses. Deselect one first.', 'warning');
+      return;
+    }
+    compareSelection.push({ id, label });
+    updateCompareBtnStyle(id, true);
+    updateCompareBar();
+  }
+
+  function updateCompareBtnStyle(id, selected) {
+    const btn = document.getElementById(`cmp-btn-${id}`);
+    if (!btn) return;
+    if (selected) {
+      btn.style.background = 'rgba(59,130,246,0.2)';
+      btn.style.borderColor = 'var(--brand-blue)';
+      btn.style.color = '#60A5FA';
+    } else {
+      btn.style.background = '';
+      btn.style.borderColor = '';
+      btn.style.color = '';
+    }
+  }
+
+  function updateCompareBar() {
+    const bar = document.getElementById('compare-bar');
+    const goCmp = document.getElementById('go-compare-btn');
+    const slotA = document.getElementById('slot-a');
+    const slotB = document.getElementById('slot-b');
+
+    if (compareSelection.length === 0) {
+      bar.classList.remove('visible');
+      return;
+    }
+    bar.classList.add('visible');
+
+    slotA.textContent = compareSelection[0]?.label || 'Slot A — pick one';
+    slotA.className = 'compare-slot' + (compareSelection[0] ? ' filled' : '');
+    slotB.textContent = compareSelection[1]?.label || 'Slot B — pick one';
+    slotB.className = 'compare-slot' + (compareSelection[1] ? ' filled' : '');
+
+    goCmp.disabled = compareSelection.length < 2;
+  }
+
+  function cancelCompare() {
+    compareSelection.forEach(s => updateCompareBtnStyle(s.id, false));
+    compareSelection = [];
+    updateCompareBar();
+  }
+
+  function goCompare() {
+    if (compareSelection.length < 2) return;
+    sessionStorage.setItem('compareIds', JSON.stringify([compareSelection[0].id, compareSelection[1].id]));
+    window.location.href = '/compare';
+  }
+
+  async function downloadPdfDirect(evalId) {
+    if (!evalId) return;
+    try {
+      showToast('Preparing audit report PDF...', 'info');
+      const token = await getAuthToken();
+      const res = await fetch(`/api/analysis/${evalId}/report-pdf`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Failed to generate report PDF');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ResumeAI_Audit_Report_${evalId.slice(0, 8)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Audit report PDF downloaded!', 'success');
+    } catch (err) {
+      showToast('Error downloading report PDF: ' + err.message, 'error');
+    }
+  }
+
+  // ── Delete ─────────────────────────────────────────────────────
+  function openDeleteModal(id) {
+    pendingDeleteId = id;
+    document.getElementById('delete-modal').classList.add('active');
+  }
+  function closeDeleteModal() {
+    pendingDeleteId = null;
+    document.getElementById('delete-modal').classList.remove('active');
+  }
+  async function confirmDelete() {
+    if (!pendingDeleteId) return;
+    const id = pendingDeleteId;
+    const btn = document.getElementById('confirm-delete-btn');
+    btn.disabled = true;
+    btn.textContent = 'Deleting…';
+    try {
+      await apiCall('DELETE', `/api/analysis/${id}`);
+      closeDeleteModal();
+      // Remove from local array and re-render
+      allAnalyses = allAnalyses.filter(a => a.id !== id);
+      compareSelection = compareSelection.filter(s => s.id !== id);
+      applySortAndRender();
+      updateCompareBar();
+      showToast('Analysis deleted successfully.', 'success');
+    } catch (err) {
+      showToast(err.message || 'Failed to delete analysis.', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Delete';
+    }
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Certificate – ResumeAI</title>
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <style>
+    /* ─── Trophy / Eligible hero ─── */
+    .cert-hero {
+      text-align: center;
+      padding: 2.5rem 2rem;
+      background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(168,85,247,0.12));
+      border: 1px solid var(--border-accent);
+      border-radius: var(--radius-lg);
+      margin-bottom: 1.5rem;
+    }
+    .cert-hero .trophy { font-size: 4rem; line-height: 1; margin-bottom: 0.75rem; }
+    .cert-hero h2 { margin: 0 0 0.5rem; font-size: 1.6rem; }
+    .cert-hero p  { margin: 0; color: var(--text-secondary); }
+
+    /* ─── Score pills ─── */
+    .score-row {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin: 1.5rem 0;
+      flex-wrap: wrap;
+    }
+    .score-pill {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 0.9rem 1.75rem;
+      text-align: center;
+      min-width: 130px;
+    }
+    .score-pill .pill-val {
+      font-size: 1.8rem;
+      font-weight: 800;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .score-pill .pill-label { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.15rem; }
+
+    /* ─── Certificate preview card ─── */
+    .cert-preview {
+      display: none;
+      border: 2px solid var(--brand-blue);
+      border-radius: var(--radius-lg);
+      background: var(--bg-card);
+      padding: 2rem;
+      margin-top: 1.5rem;
+      position: relative;
+    }
+    .cert-preview.visible { display: block; }
+    .cert-preview-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .cert-logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: var(--gradient-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #fff;
+    }
+    .cert-preview-header h3 { margin: 0; font-size: 1.1rem; }
+    .cert-preview-header p  { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
+    .cert-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem 1.5rem; margin-bottom: 1.5rem; }
+    .cert-field label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.2rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .cert-field span  { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
+    .cert-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+
+    /* ─── Not eligible ─── */
+    .not-eligible-hero {
+      text-align: center;
+      padding: 2rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      margin-bottom: 1.5rem;
+    }
+    .not-eligible-hero .icon { font-size: 3.5rem; margin-bottom: 0.75rem; }
+    .not-eligible-hero h2 { margin: 0 0 0.5rem; }
+    .not-eligible-hero p  { color: var(--text-muted); margin: 0; }
+
+    .threshold-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .threshold-row .t-label { width: 130px; font-size: 0.875rem; color: var(--text-secondary); flex-shrink: 0; }
+    .threshold-row .progress-bar-wrap { flex: 1; }
+    .threshold-row .t-val { width: 80px; text-align: right; font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
+
+    .criteria-list { list-style: none; padding: 0; margin: 0; }
+    .criteria-list li {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+    .criteria-list li:last-child { border-bottom: none; }
+    .criteria-list li.met   .ci-icon { color: #22c55e; }
+    .criteria-list li.unmet .ci-icon { color: #ef4444; }
+
+    /* ─── History table ─── */
+    .cert-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    .cert-table th {
+      text-align: left;
+      padding: 0.6rem 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .cert-table td {
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-primary);
+      vertical-align: middle;
+    }
+    .cert-table tr:last-child td { border-bottom: none; }
+    .cert-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .cert-id-pill {
+      font-family: monospace;
+      font-size: 0.75rem;
+      background: var(--bg-secondary);
+      border-radius: 4px;
+      padding: 2px 6px;
+      color: var(--text-secondary);
+    }
+
+    /* ─── Disclaimer ─── */
+    .disclaimer-box {
+      background: rgba(245,158,11,0.08);
+      border: 1px solid rgba(245,158,11,0.3);
+      border-radius: var(--radius-md);
+      padding: 0.9rem 1.1rem;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    .disclaimer-box strong { color: #f59e0b; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  {% include 'partials/sidebar.html' %}
+
+  <!-- Main Content -->
+  <div class="main-content">
+    {% with topbar_label="Readiness Certificate" %}
+      {% include 'partials/topbar.html' %}
+    {% endwith %}
+
+    <div class="page-content">
+      <div class="loading-overlay" id="page-loading">
+        <div class="spinner"></div>
+      </div>
+
+      <!-- Disclaimer -->
+      <div class="disclaimer-box" style="margin-bottom:1.5rem;">
+        <strong>⚠️ Important Disclaimer:</strong> This certificate is a <strong>ResumeAI platform assessment</strong>.
+        It is <em>not</em> an industry certification, government certificate, or professional qualification.
+        It reflects your resume readiness score as evaluated by the ResumeAI platform only.
+      </div>
+
+      <!-- ── ELIGIBLE SECTION ── -->
+      <div id="eligible-section" style="display:none;">
+        <div class="cert-hero">
+          <div class="trophy">🎉</div>
+          <h2>Congratulations! You're Eligible!</h2>
+          <p>Your resume has met the required thresholds to earn a ResumeAI Readiness Certificate.</p>
+
+          <div class="score-row">
+            <div class="score-pill">
+              <div class="pill-val" id="el-resume-score">—</div>
+              <div class="pill-label">Resume Score</div>
+            </div>
+            <div class="score-pill">
+              <div class="pill-val" id="el-ats-score">—</div>
+              <div class="pill-label">ATS Score</div>
+            </div>
+            <div class="score-pill">
+              <div class="pill-val" style="font-size:1.2rem;color:#22c55e;-webkit-text-fill-color:#22c55e;">✓ Met</div>
+              <div class="pill-label">Threshold (70/70)</div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-lg" id="generate-cert-btn">
+            🏅 Generate Certificate
+          </button>
+        </div>
+
+        <!-- Certificate preview (shown after generation) -->
+        <div class="cert-preview" id="cert-preview">
+          <div class="cert-preview-header">
+            <div class="cert-logo">R</div>
+            <div>
+              <h3>ResumeAI Readiness Certificate</h3>
+              <p>Platform Assessment — Not a professional qualification</p>
+            </div>
+            <div style="margin-left:auto;">
+              <span class="badge badge-green">✓ Verified</span>
+            </div>
+          </div>
+
+          <div class="cert-fields">
+            <div class="cert-field">
+              <label>Certificate ID</label>
+              <span id="prev-cert-id" style="font-family:monospace;font-size:0.85rem;">—</span>
+            </div>
+            <div class="cert-field">
+              <label>Holder Name</label>
+              <span id="prev-cert-name">—</span>
+            </div>
+            <div class="cert-field">
+              <label>Resume Score</label>
+              <span id="prev-cert-resume">—</span>
+            </div>
+            <div class="cert-field">
+              <label>ATS Score</label>
+              <span id="prev-cert-ats">—</span>
+            </div>
+            <div class="cert-field">
+              <label>Issued On</label>
+              <span id="prev-cert-date">—</span>
+            </div>
+            <div class="cert-field">
+              <label>Status</label>
+              <span style="color:#22c55e;">Valid ✓</span>
+            </div>
+          </div>
+
+          <div class="cert-actions">
+            <button class="btn btn-primary" id="download-cert-btn">⬇️ Download PDF</button>
+            <a class="btn btn-secondary" id="verify-cert-link" href="#" target="_blank">🔗 Verify Certificate</a>
+            <button class="btn btn-secondary" id="share-cert-btn">📋 Copy Verify URL</button>
+            <a class="btn btn-outline" id="linkedin-cert-btn" href="#" target="_blank" style="background:#0A66C2;color:#fff;border-color:#0A66C2;">💼 Add to LinkedIn</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── NOT ELIGIBLE SECTION ── -->
+      <div id="not-eligible-section" style="display:none;">
+        <div class="not-eligible-hero">
+          <div class="icon">📋</div>
+          <h2>Not Yet Ready</h2>
+          <p>You need a minimum score of <strong>70/100</strong> for both Resume Score and ATS Score to earn a certificate.</p>
+        </div>
+
+        <div class="card" style="margin-bottom:1.5rem;">
+          <h3 style="margin:0 0 1.25rem;font-size:1rem;">Current Progress</h3>
+
+          <div class="threshold-row">
+            <span class="t-label">Resume Score</span>
+            <div class="progress-bar-wrap" style="flex:1;">
+              <div class="progress-bar" id="ne-resume-bar" style="width:0%;background:var(--brand-blue);"></div>
+            </div>
+            <span class="t-val"><span id="ne-resume-val">0</span>/100</span>
+          </div>
+          <div class="threshold-row">
+            <span class="t-label">ATS Score</span>
+            <div class="progress-bar-wrap" style="flex:1;">
+              <div class="progress-bar" id="ne-ats-bar" style="width:0%;background:var(--brand-purple);"></div>
+            </div>
+            <span class="t-val"><span id="ne-ats-val">0</span>/100</span>
+          </div>
+
+          <div style="margin-top:1.5rem;">
+            <h4 style="margin:0 0 0.75rem;font-size:0.9rem;">Criteria Checklist</h4>
+            <ul class="criteria-list" id="criteria-list">
+              <li class="unmet">
+                <span class="ci-icon">✗</span>
+                <span>Resume Score ≥ 90 — <em>Loading…</em></span>
+              </li>
+              <li class="unmet">
+                <span class="ci-icon">✗</span>
+                <span>ATS Score ≥ 90 — <em>Loading…</em></span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Roadmap -->
+        <div class="card" style="margin-bottom:1.5rem;">
+          <h3 style="margin:0 0 1rem;font-size:1rem;">📍 Roadmap to Certificate</h3>
+          <ul id="roadmap-list" style="margin:0;padding-left:1.2rem;color:var(--text-secondary);font-size:0.875rem;line-height:2;">
+            <li>Upload a more complete and keyword-rich resume.</li>
+            <li>Ensure your resume has clear section headers (Education, Skills, Experience, Projects).</li>
+            <li>Add quantified achievements to your experience bullets.</li>
+            <li>Include relevant technical skills matching your target role.</li>
+            <li>Improve ATS compatibility: avoid tables, images, and complex formatting.</li>
+            <li>Aim for 1 page (or max 2) with concise language.</li>
+          </ul>
+          <div style="margin-top:1.25rem;">
+            <a href="/upload" class="btn btn-primary">📄 Analyze Resume Now</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PREVIOUS CERTIFICATES ── -->
+      <div class="card" id="history-section" style="display:none;">
+        <h3 style="margin:0 0 1rem;font-size:1rem;">Previous Certificates</h3>
+        <div style="overflow-x:auto;">
+          <table class="cert-table">
+            <thead>
+              <tr>
+                <th>Certificate ID</th>
+                <th>Issued On</th>
+                <th>Resume Score</th>
+                <th>ATS Score</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="cert-history-body">
+              <!-- rows injected by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{% include 'partials/firebase_boot.html' %}
+<script type="module">
+import { auth, logoutUser, onAuthRequired, apiCall, showToast, loadAnalysisFromSession } from "/static/js/main.js";
+
+let activeCertId = null;
+
+/* ── Format date ── */
+function fmtDate(iso) {
+  if (!iso) return '—';
+  try { return new Date(iso).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }); }
+  catch { return iso; }
+}
+
+/* ── Show eligible UI ── */
+function showEligible(eligData) {
+  document.getElementById('eligible-section').style.display    = 'block';
+  document.getElementById('not-eligible-section').style.display = 'none';
+  document.getElementById('el-resume-score').textContent = (eligData.overallScore ?? eligData.resumeScore ?? '—') + '/100';
+  document.getElementById('el-ats-score').textContent    = (eligData.atsScore    ?? '—') + '/100';
+}
+
+/* ── Show not-eligible UI ── */
+function showNotEligible(eligData) {
+  document.getElementById('eligible-section').style.display    = 'none';
+  document.getElementById('not-eligible-section').style.display = 'block';
+
+  const rs  = eligData.overallScore ?? eligData.resumeScore ?? 0;
+  const ats = eligData.atsScore    ?? 0;
+  const threshold    = eligData.threshold    ?? 70;
+  const atsThreshold = eligData.atsThreshold ?? 70;
+
+  document.getElementById('ne-resume-val').textContent   = rs;
+  document.getElementById('ne-ats-val').textContent      = ats;
+  document.getElementById('ne-resume-bar').style.width   = Math.min(rs, 100)  + '%';
+  document.getElementById('ne-ats-bar').style.width      = Math.min(ats, 100) + '%';
+
+  document.getElementById('ne-resume-bar').style.background = rs  >= threshold    ? '#22c55e' : rs  >= 50 ? '#f59e0b' : '#ef4444';
+  document.getElementById('ne-ats-bar').style.background    = ats >= atsThreshold ? '#22c55e' : ats >= 50 ? '#f59e0b' : '#ef4444';
+
+  const heroP = document.querySelector('.not-eligible-hero p');
+  if (heroP) heroP.innerHTML = `You need a minimum score of <strong>${threshold}/100</strong> for both Resume Score and ATS Score to earn a certificate.`;
+
+  const criteria = [
+    { label: `Resume Score ≥ ${threshold}`, met: rs  >= threshold,    val: rs,  thr: threshold    },
+    { label: `ATS Score ≥ ${atsThreshold}`, met: ats >= atsThreshold, val: ats, thr: atsThreshold },
+  ];
+  const ul = document.getElementById('criteria-list');
+  if (ul) {
+    ul.innerHTML = criteria.map(c => `
+      <li class="${c.met ? 'met' : 'unmet'}">
+        <span class="ci-icon">${c.met ? '✓' : '✗'}</span>
+        <span>${c.label} — <strong>Current: ${c.val}</strong>${c.met ? '' : ` (need ${c.thr - c.val} more)`}</span>
+      </li>`).join('');
+  }
+}
+
+/* ── Render history table ── */
+function renderHistory(certs) {
+  if (!certs || certs.length === 0) return;
+  document.getElementById('history-section').style.display = 'block';
+  const tbody = document.getElementById('cert-history-body');
+  if (!tbody) return;
+  tbody.innerHTML = certs.map(c => `
+    <tr>
+      <td><span class="cert-id-pill">${c.certificateId || c.id || '—'}</span></td>
+      <td>${fmtDate(c.issuedAt)}</td>
+      <td><span class="badge badge-blue">${c.overallScore ?? '—'}/100</span></td>
+      <td><span class="badge badge-purple">${c.atsScore    ?? '—'}/100</span></td>
+      <td style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <button class="btn btn-secondary btn-sm hist-download"
+          data-id="${c.certificateId || c.id}">⬇️ PDF</button>
+        <a class="btn btn-secondary btn-sm"
+          href="/verify/${c.certificateId || c.id}" target="_blank">🔗 Verify</a>
+      </td>
+    </tr>`).join('');
+
+  tbody.querySelectorAll('.hist-download').forEach(btn => {
+    btn.addEventListener('click', function () {
+      downloadCert(this.dataset.id);
+    });
+  });
+}
+
+/* ── Download certificate ── */
+async function downloadCert(certId) {
+  try {
+    showToast('Preparing PDF…', 'info');
+    let token = null;
+    if (auth && auth.currentUser) {
+      token = await auth.currentUser.getIdToken();
+    }
+    const url  = `/api/certificate/download/${certId}`;
+    const res  = await fetch(url, { headers: token ? { Authorization: 'Bearer ' + token } : {} });
+    if (!res.ok) throw new Error('Download failed.');
+    const blob = await res.blob();
+    const link = document.createElement('a');
+    link.href  = URL.createObjectURL(blob);
+    link.download = `ResumeAI_Certificate_${certId}.pdf`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  } catch (err) {
+    showToast(err.message || 'Download failed.', 'error');
+  }
+}
+
+/* ── Fill preview card ── */
+function fillPreview(cert) {
+  activeCertId = cert.certificateId || cert.id;
+  document.getElementById('prev-cert-id').textContent     = activeCertId;
+  document.getElementById('prev-cert-name').textContent   = cert.userName || cert.name || 'Candidate';
+  document.getElementById('prev-cert-resume').textContent = (cert.overallScore ?? '—') + '/100';
+  document.getElementById('prev-cert-ats').textContent    = (cert.atsScore     ?? '—') + '/100';
+  document.getElementById('prev-cert-date').textContent   = fmtDate(cert.issuedAt || cert.issueDate);
+  const verifyUrl = window.location.origin + '/verify/' + activeCertId;
+  document.getElementById('verify-cert-link').href        = verifyUrl;
+
+  const linkedinBtn = document.getElementById('linkedin-cert-btn');
+  if (linkedinBtn) {
+    const orgName = encodeURIComponent('ResumeAI Career Platform');
+    const certName = encodeURIComponent('Certificate of Resume Readiness');
+    const certUrl = encodeURIComponent(verifyUrl);
+    linkedinBtn.href = `https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name=${certName}&organizationName=${orgName}&certId=${activeCertId}&certUrl=${certUrl}`;
+  }
+
+  document.getElementById('cert-preview').classList.add('visible');
+  document.getElementById('cert-preview').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+/* ── Generate certificate ── */
+async function generateCertificate() {
+  const btn = document.getElementById('generate-cert-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Generating…'; }
+  try {
+    const res = await apiCall('/api/certificate/generate', 'POST');
+    const certObj = (res && res.certificate) ? res.certificate : res;
+    if (certObj && certObj.certificateId) {
+      fillPreview(certObj);
+      showToast('🎉 Certificate generated successfully!', 'success');
+      try {
+        const certs = await apiCall('/api/certificate/my-certificates', 'GET');
+        if (certs && certs.certificates) renderHistory(certs.certificates);
+      } catch (e) {}
+    } else {
+      const msg = (res && res.error) || (res && res.message) || 'Failed to generate certificate.';
+      throw new Error(msg);
+    }
+  } catch (err) {
+    showToast(err.message || 'Generation failed. Please try again.', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🏅 Generate Certificate'; }
+  }
+}
+
+// Attach event delegation
+document.addEventListener('click', function (e) {
+  if (e.target && e.target.id === 'generate-cert-btn') generateCertificate();
+  if (e.target && e.target.id === 'download-cert-btn') {
+    if (activeCertId) downloadCert(activeCertId);
+    else showToast('No certificate to download.', 'error');
+  }
+  if (e.target && e.target.id === 'share-cert-btn') {
+    if (!activeCertId) { showToast('Generate a certificate first.', 'error'); return; }
+    const url = window.location.origin + '/verify/' + activeCertId;
+    navigator.clipboard.writeText(url)
+      .then(() => showToast('Verify URL copied to clipboard!', 'success'))
+      .catch(() => showToast('Copy failed. URL: ' + url, 'info'));
+  }
+  if (e.target && e.target.id === 'logout-btn') {
+    if (typeof logoutUser === 'function') { logoutUser(); }
+    else { window.location.href = '/login'; }
+  }
+});
+
+/* ── Page init ── */
+async function initPage() {
+  const loader = document.getElementById('page-loading');
+  if (loader) loader.style.display = 'none';
+
+  let eligData  = null;
+  let certsData = [];
+
+  try {
+    eligData = await apiCall('/api/certificate/check-eligibility', 'GET');
+  } catch (err) {
+    console.warn('Check eligibility API call failed, falling back to session:', err);
+    const session = (typeof loadAnalysisFromSession === 'function') ? loadAnalysisFromSession() : null;
+    if (session) {
+      const sOverall = session.overallScore || session.overall_score || 0;
+      const sAts = session.atsScore || session.ats_score || 0;
+      eligData = {
+        eligible: sOverall >= 70 && sAts >= 70,
+        overallScore: sOverall,
+        resumeScore: sOverall,
+        atsScore: sAts,
+        threshold: 70,
+        atsThreshold: 70
+      };
+    } else {
+      eligData = { eligible: false, overallScore: 0, atsScore: 0, threshold: 70, atsThreshold: 70 };
+    }
+  }
+
+  try {
+    const certs = await apiCall('/api/certificate/my-certificates', 'GET');
+    certsData = (certs && certs.certificates) || [];
+  } catch (err) {
+    console.warn('My certificates API call failed:', err);
+  }
+
+  /* Render eligibility state */
+  if (eligData && eligData.eligible) {
+    showEligible(eligData);
+  } else {
+    showNotEligible(eligData || {});
+  }
+
+  /* Render history & auto-preview latest certificate if exists */
+  if (certsData && certsData.length > 0) {
+    renderHistory(certsData);
+    fillPreview(certsData[0]);
+  }
+}
+
+/* ── Direct module bootstrap ── */
+(async function() {
+  try {
+    const user = await onAuthRequired('/login');
+    if (!user) return;
+  } catch (e) {
+    console.warn('Auth guard note:', e);
+  }
+  await initPage();
+})();
+</script>
+</body>
+</html>

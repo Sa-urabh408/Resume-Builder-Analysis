@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Job Match — ResumeAI</title>
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <style>
+    /* ── Page-specific styles ── */
+    .jm-layout {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+    @media (max-width: 960px) {
+      .jm-layout { grid-template-columns: 1fr; }
+    }
+
+    /* Left panel */
+    .resume-status-card { position: sticky; top: 1.5rem; }
+    .resume-loaded-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .resume-file-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: rgba(16,185,129,0.1);
+      border: 1px solid rgba(16,185,129,0.3);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1rem;
+    }
+    .resume-file-pill .pill-icon { font-size: 1.4rem; }
+    .resume-file-pill .pill-name {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 180px;
+    }
+    .resume-file-pill .pill-status { font-size: 0.75rem; color: #34D399; }
+
+    .resume-score-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    .mini-score-item {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      padding: 0.75rem;
+      text-align: center;
+    }
+    .mini-score-val {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+    .mini-score-lbl {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-top: 0.25rem;
+    }
+
+    .no-resume-cta {
+      text-align: center;
+      padding: 2rem 1rem;
+    }
+    .no-resume-cta .cta-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .no-resume-cta p { font-size: 0.875rem; margin-bottom: 1.25rem; }
+
+    /* Right panel */
+    .jd-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+    .jd-counter { font-size: 0.8rem; color: var(--text-muted); }
+    .jd-textarea {
+      width: 100%;
+      min-height: 220px;
+      resize: vertical;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      font-size: 0.9rem;
+      color: var(--text-primary);
+      line-height: 1.6;
+      transition: var(--transition);
+    }
+    .jd-textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+    }
+    .jd-textarea::placeholder { color: var(--text-muted); }
+
+    /* Results section */
+    #results-section { display: none; }
+    #results-section.visible { display: block; }
+
+    .match-hero {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(124,58,237,0.08));
+      border: 1px solid var(--accent);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+    }
+    .match-hero-text { flex: 1; }
+    .match-hero-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+    }
+    .match-disclaimer {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      background: rgba(245,158,11,0.08);
+      border: 1px solid rgba(245,158,11,0.2);
+      border-radius: var(--radius-sm);
+      padding: 0.5rem 0.75rem;
+      margin-top: 0.75rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.4rem;
+    }
+
+    .skills-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 1100px) { .skills-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .skills-grid { grid-template-columns: 1fr; } }
+
+    .skills-col-header {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .skills-col-header.matched { color: #34D399; }
+    .skills-col-header.missing  { color: #F87171; }
+    .skills-col-header.kw-match { color: #60A5FA; }
+    .skills-col-header.kw-miss  { color: #FBBF24; }
+
+    .skill-chip {
+      display: inline-block;
+      font-size: 0.78rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: var(--radius-full);
+      margin: 0.2rem;
+      font-weight: 500;
+    }
+    .chip-green  { background: rgba(16,185,129,0.15); color: #34D399; border: 1px solid rgba(16,185,129,0.25); }
+    .chip-red    { background: rgba(239,68,68,0.15);  color: #F87171; border: 1px solid rgba(239,68,68,0.25); }
+    .chip-blue   { background: rgba(59,130,246,0.15); color: #60A5FA; border: 1px solid rgba(59,130,246,0.25); }
+    .chip-yellow { background: rgba(245,158,11,0.15); color: #FBBF24; border: 1px solid rgba(245,158,11,0.25); }
+
+    .strengths-gaps-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 680px) { .strengths-gaps-grid { grid-template-columns: 1fr; } }
+
+    .list-item-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 0.875rem;
+    }
+    .list-item-row:last-child { border-bottom: none; }
+    .list-icon { font-size: 0.9rem; flex-shrink: 0; margin-top: 0.1rem; }
+
+    .numbered-list { counter-reset: rec-counter; padding: 0; list-style: none; }
+    .numbered-list li {
+      counter-increment: rec-counter;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+    .numbered-list li:last-child { border-bottom: none; }
+    .numbered-list li::before {
+      content: counter(rec-counter);
+      min-width: 24px;
+      height: 24px;
+      background: var(--accent);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .summary-box {
+      background: rgba(59,130,246,0.06);
+      border: 1px solid rgba(59,130,246,0.15);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: 1.5rem;
+    }
+
+    /* Job history */
+    .history-list { display: flex; flex-direction: column; gap: 0.75rem; }
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.25rem;
+      transition: var(--transition);
+    }
+    .history-item:hover { border-color: var(--accent); }
+    .history-score-badge {
+      min-width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .history-meta { flex: 1; min-width: 0; }
+    .history-jd-preview {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .history-date { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-primary);
+    }
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 1.5rem 0;
+    }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  {% include 'partials/sidebar.html' %}
+
+  <!-- Main Content -->
+  <div class="main-content">
+    {% with topbar_label="Job Match" %}
+      {% include 'partials/topbar.html' %}
+    {% endwith %}
+
+    <div class="page-content">
+      <!-- Page header -->
+      <div style="margin-bottom:2rem;">
+        <h1 style="font-size:1.75rem;margin-bottom:0.25rem;">Job Match Analyzer</h1>
+        <p style="color:var(--text-muted);font-size:0.9rem;">Paste a job description to see how well your resume matches it.</p>
+      </div>
+
+      <!-- Two-panel layout -->
+      <div class="jm-layout">
+
+        <!-- ── LEFT: Resume Status ── -->
+        <div class="card resume-status-card">
+          <div class="section-title">Resume Status</div>
+
+          <!-- Loaded state (shown when analysis in session) -->
+          <div id="resume-loaded" class="resume-loaded-info" style="display:none;">
+            <div class="resume-file-pill">
+              <span class="pill-icon">📋</span>
+              <div>
+                <div class="pill-name" id="resume-filename">resume.pdf</div>
+                <div class="pill-status">✓ Ready for matching</div>
+              </div>
+            </div>
+            <div class="resume-score-row">
+              <div class="mini-score-item">
+                <div class="mini-score-val" id="mini-overall">—</div>
+                <div class="mini-score-lbl">Overall</div>
+              </div>
+              <div class="mini-score-item">
+                <div class="mini-score-val" id="mini-ats">—</div>
+                <div class="mini-score-lbl">ATS Score</div>
+              </div>
+            </div>
+            <div id="mini-readiness" style="text-align:center;"></div>
+            <div id="mini-goal" style="font-size:0.8rem;color:var(--text-muted);padding:0.5rem;background:var(--bg-secondary);border-radius:var(--radius-sm);">
+              🎯 <span id="mini-goal-text">Career goal not set</span>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="clearResume()">Use Different Resume</button>
+          </div>
+
+          <!-- No-resume state -->
+          <div id="resume-empty" class="no-resume-cta">
+            <h3 style="font-size:1rem;margin-bottom:0.5rem;">No Resume Loaded</h3>
+            <p>Analyze a resume first to use the Job Match feature.</p>
+            <a href="/upload" class="btn btn-primary btn-sm">Upload & Analyze Resume</a>
+          </div>
+        </div>
+
+        <!-- ── RIGHT: JD Input + Results ── -->
+        <div>
+          <div class="card" style="margin-bottom:1.5rem;">
+            <div class="jd-label">
+              <div class="section-title" style="margin-bottom:0;">📝 Job Description</div>
+              <span class="jd-counter"><span id="jd-char-count">0</span> chars</span>
+            </div>
+            <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">Paste the full job posting — title, requirements, responsibilities, and qualifications.</p>
+            <textarea
+              id="jd-input"
+              class="jd-textarea"
+              placeholder="Paste the job description here...&#10;&#10;Example:&#10;Software Engineer — Acme Corp&#10;We're looking for a skilled engineer to join our backend team. Requirements: Python, REST APIs, AWS, 3+ years experience..."
+            ></textarea>
+            <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-top:0.75rem;">
+              <span style="font-size:0.78rem;color:var(--text-muted);">Quick Sample JD:</span>
+              <button type="button" class="btn btn-secondary btn-sm" style="font-size:0.75rem;padding:0.25rem 0.6rem;" onclick="insertSampleJD('fullstack')">Full Stack Dev</button>
+              <button type="button" class="btn btn-secondary btn-sm" style="font-size:0.75rem;padding:0.25rem 0.6rem;" onclick="insertSampleJD('frontend')">Frontend / React</button>
+              <button type="button" class="btn btn-secondary btn-sm" style="font-size:0.75rem;padding:0.25rem 0.6rem;" onclick="insertSampleJD('python')">Python Backend</button>
+              <button type="button" class="btn btn-secondary btn-sm" style="font-size:0.75rem;padding:0.25rem 0.6rem;" onclick="insertSampleJD('data')">Data Analyst</button>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:1rem;gap:1rem;flex-wrap:wrap;">
+              <button class="btn btn-secondary btn-sm" onclick="clearJD()">Clear</button>
+              <button id="analyze-btn" class="btn btn-primary btn-lg" onclick="analyzeJobMatch()">
+                Analyze Job Match
+              </button>
+            </div>
+          </div>
+
+          <!-- ── RESULTS ── -->
+          <div id="results-section">
+
+            <!-- Match Hero -->
+            <div class="match-hero">
+              <div id="match-score-circle" style="flex-shrink:0;"></div>
+              <div class="match-hero-text">
+                <div class="match-hero-title">Match Score: <span id="match-label" class="text-gradient">—</span></div>
+                <p id="match-tagline" style="font-size:0.9rem;margin-bottom:0.5rem;"></p>
+                <div class="match-disclaimer">
+                  ⚠️ This is an AI estimate of resume-to-job-description fit, not a guarantee of employment. Results may vary based on recruiter preferences and application context.
+                </div>
+              </div>
+            </div>
+
+            <!-- 4 Skill Columns -->
+            <div class="card" style="margin-bottom:1.5rem;">
+              <div class="section-title">🧩 Skills & Keyword Breakdown</div>
+              <div class="skills-grid">
+                <div>
+                  <div class="skills-col-header matched">✅ Matched Skills</div>
+                  <div id="col-matched-skills"></div>
+                </div>
+                <div>
+                  <div class="skills-col-header missing">❌ Missing Skills</div>
+                  <div id="col-missing-skills"></div>
+                </div>
+                <div>
+                  <div class="skills-col-header kw-match">🔵 Matched Keywords</div>
+                  <div id="col-matched-kw"></div>
+                </div>
+                <div>
+                  <div class="skills-col-header kw-miss">🟡 Missing Keywords</div>
+                  <div id="col-missing-kw"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Strengths & Gaps -->
+            <div class="strengths-gaps-grid">
+              <div class="card">
+                <div class="section-title">💪 Strengths</div>
+                <div id="strengths-list"></div>
+              </div>
+              <div class="card">
+                <div class="section-title">🚧 Gaps</div>
+                <div id="gaps-list"></div>
+              </div>
+            </div>
+
+            <!-- Recommended Additions -->
+            <div class="card" style="margin-bottom:1.5rem;">
+              <div class="section-title">➕ Recommended Additions to Your Resume</div>
+              <ul id="recommended-additions" class="numbered-list"></ul>
+            </div>
+
+            <!-- AI Tailored Bullet Points for this Role -->
+            <div class="card" style="margin-bottom:1.5rem; border-left: 4px solid var(--accent); background: var(--bg-card-subtle);">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+                <div>
+                  <div class="section-title" style="margin-bottom:0.2rem;">✨ Tailored Bullet Points to Boost Match</div>
+                  <p style="font-size:0.82rem; color:var(--text-muted); margin:0;">Incorporate these quantified STAR statements into your resume to directly address job requirements.</p>
+                </div>
+              </div>
+              <div id="tailored-bullets-list" style="display:flex; flex-direction:column; gap:0.85rem;"></div>
+            </div>
+
+            <!-- Resume Changes -->
+            <div class="card" style="margin-bottom:1.5rem;">
+              <div class="section-title">✏️ Suggested Resume Changes</div>
+              <ul id="resume-changes" class="numbered-list"></ul>
+            </div>
+
+            <!-- Summary -->
+            <div class="card" style="margin-bottom:1.5rem;">
+              <div class="section-title">📋 AI Summary</div>
+              <div id="match-summary" class="summary-box"></div>
+            </div>
+
+          </div><!-- /results-section -->
+
+          <!-- Previous Job Matches -->
+          <div class="card" style="margin-top:1.5rem;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+              <div class="section-title" style="margin-bottom:0;">🕑 Previous Job Matches</div>
+              <button class="btn btn-secondary btn-sm" onclick="loadJobHistory()">Refresh</button>
+            </div>
+            <div id="job-history-list">
+              <div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:0.875rem;">
+                Loading history...
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /right panel -->
+      </div><!-- /jm-layout -->
+    </div><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /app-layout -->
+
+  {% include 'partials/firebase_boot.html' %}
+<script>
+  // ── Sample Job Descriptions ───────────────────────────────────
+  const SAMPLE_JDS = {
+    fullstack: `Full Stack Developer — CloudScale Systems
+Requirements:
+- 2+ years of experience with modern JavaScript / TypeScript, Node.js, and React.
+- Strong proficiency in SQL (PostgreSQL/MySQL) and NoSQL (MongoDB/Firestore).
+- Experience building and deploying RESTful APIs and microservices.
+- Familiarity with Docker, Git, CI/CD pipelines, and cloud platforms (AWS or GCP).
+- Good communication skills and experience collaborating in Agile teams.`,
+
+    frontend: `Frontend Engineer (React / UI) — NextGen Apps
+Requirements:
+- Strong foundations in JavaScript (ES6+), TypeScript, HTML5, CSS3/Tailwind CSS.
+- Extensive hands-on experience with React, Next.js, and state management (Redux/Zustand).
+- Experience with responsive web design, web accessibility (a11y), and web performance.
+- Unit testing with Jest / React Testing Library.
+- Passion for crafting polished user experiences and high fidelity UI.`,
+
+    python: `Backend Python Engineer — DataCore Software
+Requirements:
+- Strong Python expertise (FastAPI, Flask, or Django).
+- Solid understanding of relational database design, query optimization, and ORMs.
+- Experience designing secure REST APIs, authentication (JWT/OAuth), and background tasks (Celery/Redis).
+- Hands-on experience with unit testing, Docker, and Linux environments.
+- Knowledge of cloud deployment (AWS EC2/S3/ECS) is a major plus.`,
+
+    data: `Data Analyst — Insights Analytics
+Requirements:
+- Proficiency in Python or R for data analysis and statistical modeling (Pandas, NumPy).
+- Advanced SQL skills: complex joins, window functions, and data transformations.
+- Experience with visualization tools like Tableau, Power BI, or Matplotlib/Seaborn.
+- Strong problem-solving abilities and communication skills to convey data insights to stakeholders.`
+  };
+
+  function insertSampleJD(role) {
+    const text = SAMPLE_JDS[role] || '';
+    const input = document.getElementById('jd-input');
+    input.value = text;
+    document.getElementById('jd-char-count').textContent = text.length;
+    input.focus();
+  }
+
+  // ── Resume state ───────────────────────────────────────────────
+  let resumeData = null;
+
+  async function loadResumeState() {
+    resumeData = loadAnalysisFromSession();
+    if (!resumeData) {
+      try {
+        const histResp = await apiCall('/api/analysis/history');
+        const list = Array.isArray(histResp) ? histResp : (histResp && (histResp.evaluations || histResp.analyses)) || [];
+        if (list.length > 0) {
+          const latestId = list[0].analysisId || list[0].evalId || list[0].id;
+          const full = await apiCall(`/api/analysis/${latestId}`);
+          if (full) {
+            resumeData = full;
+            saveAnalysisToSession(full);
+          }
+        }
+      } catch (e) {
+        console.warn('Could not auto-fetch previous resume analysis:', e);
+      }
+    }
+
+    const loaded = document.getElementById('resume-loaded');
+    const empty  = document.getElementById('resume-empty');
+    if (resumeData) {
+      loaded.style.display = 'flex';
+      empty.style.display  = 'none';
+      document.getElementById('resume-filename').textContent =
+        resumeData.filename || 'resume.pdf';
+      document.getElementById('mini-overall').textContent =
+        resumeData.overallScore ?? resumeData.overall_score ?? '—';
+      document.getElementById('mini-ats').textContent =
+        resumeData.atsScore ?? resumeData.ats_score ?? '—';
+      document.getElementById('mini-readiness').innerHTML =
+        readinessBadge(resumeData.readinessStatus || resumeData.readiness_status || 'Evaluating');
+      document.getElementById('mini-goal-text').textContent =
+        resumeData.targetRole || resumeData.careerGoal || resumeData.career_goal || 'Career goal not specified';
+    } else {
+      loaded.style.display = 'none';
+      empty.style.display  = 'block';
+    }
+  }
+
+  function clearResume() {
+    sessionStorage.removeItem('lastAnalysis');
+    resumeData = null;
+    loadResumeState();
+    document.getElementById('results-section').classList.remove('visible');
+    showToast('Resume cleared. Upload a new resume to continue.', 'info');
+  }
+
+  // ── Character counter ──────────────────────────────────────────
+  document.getElementById('jd-input').addEventListener('input', function() {
+    document.getElementById('jd-char-count').textContent = this.value.length;
+  });
+
+  function clearJD() {
+    document.getElementById('jd-input').value = '';
+    document.getElementById('jd-char-count').textContent = '0';
+  }
+
+  // ── Analyze ────────────────────────────────────────────────────
+  async function analyzeJobMatch() {
+    if (!resumeData) {
+      showToast('Please analyze a resume first.', 'error');
+      return;
+    }
+    const jd = document.getElementById('jd-input').value.trim();
+    if (jd.length < 50) {
+      showToast('Please enter at least 50 characters for the job description.', 'warning');
+      return;
+    }
+
+    const btn = document.getElementById('analyze-btn');
+    btn.disabled = true;
+
+    try {
+      showLoading('Analyzing job fit with Gemini AI...');
+      const resumeText = resumeData.extracted_text || resumeData.extractedText || (resumeData.fullAnalysis && resumeData.fullAnalysis.extracted_text) || '';
+      const result = await apiCall('POST', '/api/job/match', {
+        extracted_text: resumeText,
+        job_description: jd,
+        evalId: resumeData.evalId || resumeData.analysisId || ''
+      });
+      hideLoading();
+      renderResults(result);
+      await loadJobHistory();
+    } catch (err) {
+      hideLoading();
+      showToast(err.message || 'Analysis failed. Please try again.', 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ── Render results ─────────────────────────────────────────────
+  function renderResults(data) {
+    const section = document.getElementById('results-section');
+    section.classList.add('visible');
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Score circle
+    const score = data.match_score ?? data.score ?? 0;
+    renderCircleProgress('match-score-circle', score, 100, 160);
+
+    // Label & tagline
+    const label = score >= 80 ? 'Excellent Match' : score >= 60 ? 'Good Match' : score >= 40 ? 'Fair Match' : 'Low Match';
+    document.getElementById('match-label').textContent = label;
+    const taglines = {
+      'Excellent Match': 'Your resume is a strong fit. Apply with confidence!',
+      'Good Match': 'Solid alignment — a few tweaks can push this further.',
+      'Fair Match': 'Some gaps exist. Review recommendations below.',
+      'Low Match': 'Significant gaps. Consider tailoring your resume before applying.'
+    };
+    document.getElementById('match-tagline').textContent = taglines[label] || '';
+
+    // Skills columns
+    renderChips('col-matched-skills', data.matched_skills || [], 'chip-green');
+    renderChips('col-missing-skills', data.missing_skills || [], 'chip-red');
+    renderChips('col-matched-kw',     data.matched_keywords || [], 'chip-blue');
+    renderChips('col-missing-kw',     data.missing_keywords || [], 'chip-yellow');
+
+    // Strengths
+    renderListItems('strengths-list', data.strengths || [], '✅', 'color:#34D399;');
+    // Gaps
+    renderListItems('gaps-list', data.gaps || [], '❌', 'color:#F87171;');
+
+    // Recommended additions
+    renderNumberedList('recommended-additions', data.recommended_additions || []);
+
+    // Tailored bullets
+    const tbContainer = document.getElementById('tailored-bullets-list');
+    const tbList = data.tailored_bullets || data.tailoredBullets || [];
+    if (tbContainer) {
+      if (!tbList.length) {
+        tbContainer.innerHTML = '<div style="font-size:0.85rem;color:var(--text-muted);padding:0.5rem 0;">No tailored bullets generated.</div>';
+      } else {
+        tbContainer.innerHTML = tbList.map((tb, idx) => {
+          const bText = typeof tb === 'object' ? (tb.bullet || '') : String(tb);
+          const bImpact = typeof tb === 'object' ? (tb.impact || '') : '';
+          return `
+            <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius-sm); padding:0.9rem 1rem;">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem;">
+                <div style="font-size:0.88rem; font-weight:500; color:var(--text-primary); line-height:1.5;">
+                  • ${escapeHtml(bText)}
+                </div>
+                <button type="button" class="btn btn-outline btn-sm copy-tb-btn" data-text="${escapeHtml(bText)}" style="font-size:0.75rem; white-space:nowrap; padding:0.25rem 0.6rem;">
+                  📋 Copy
+                </button>
+              </div>
+              ${bImpact ? `<div style="font-size:0.76rem; color:var(--text-muted); margin-top:0.35rem; font-style:italic;">💡 Recruiter Advantage: ${escapeHtml(bImpact)}</div>` : ''}
+            </div>
+          `;
+        }).join('');
+
+        // Attach copy listeners
+        tbContainer.querySelectorAll('.copy-tb-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const txt = btn.getAttribute('data-text');
+            navigator.clipboard.writeText(txt).then(() => {
+              showToast('Bullet copied to clipboard!', 'success');
+            }).catch(() => {
+              showToast('Failed to copy bullet.', 'error');
+            });
+          });
+        });
+      }
+    }
+
+    // Resume changes
+    renderNumberedList('resume-changes', data.resume_changes || data.suggested_changes || []);
+
+    // Summary
+    document.getElementById('match-summary').textContent = data.summary || 'No summary available.';
+  }
+
+  function renderChips(containerId, items, chipClass) {
+    const el = document.getElementById(containerId);
+    if (!items.length) {
+      el.innerHTML = '<span style="font-size:0.78rem;color:var(--text-muted);">None identified</span>';
+      return;
+    }
+    el.innerHTML = items.map(s => `<span class="skill-chip ${chipClass}">${s}</span>`).join('');
+  }
+
+  function renderListItems(containerId, items, icon, iconStyle) {
+    const el = document.getElementById(containerId);
+    if (!items.length) {
+      el.innerHTML = '<div style="font-size:0.875rem;color:var(--text-muted);">None identified</div>';
+      return;
+    }
+    el.innerHTML = items.map(item => `
+      <div class="list-item-row">
+        <span class="list-icon" style="${iconStyle}">${icon}</span>
+        <span style="color:var(--text-secondary);">${item}</span>
+      </div>
+    `).join('');
+  }
+
+  function renderNumberedList(containerId, items) {
+    const el = document.getElementById(containerId);
+    if (!items.length) {
+      el.innerHTML = '<li style="color:var(--text-muted);font-size:0.875rem;">No recommendations at this time.</li>';
+      return;
+    }
+    el.innerHTML = items.map(item => `<li>${item}</li>`).join('');
+  }
+
+  // ── Job history ────────────────────────────────────────────────
+  async function loadJobHistory() {
+    const container = document.getElementById('job-history-list');
+    try {
+      const data = await apiCall('GET', '/api/job/history');
+      const matches = data.matches || data.history || [];
+      if (!matches.length) {
+        container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:0.875rem;">No previous job matches yet. Run your first analysis above!</div>';
+        return;
+      }
+      container.innerHTML = `<div class="history-list">${matches.map(renderHistoryItem).join('')}</div>`;
+    } catch (err) {
+      container.innerHTML = `<div class="alert alert-error">Failed to load history: ${err.message}</div>`;
+    }
+  }
+
+  function renderHistoryItem(item) {
+    const score = item.matchScore ?? item.match_score ?? item.score ?? 0;
+    const color = score >= 80 ? '#10B981' : score >= 60 ? '#F59E0B' : '#EF4444';
+    const bg    = score >= 80 ? 'rgba(16,185,129,0.15)' : score >= 60 ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)';
+    const jdPreview = (item.jobDescriptionPreview || item.job_description || item.jobDescription || item.jd_snippet || 'Job Description').slice(0, 90) + '…';
+    const dateStr = item.createdAt || item.created_at || item.date || '';
+    return `
+      <div class="history-item">
+        <div class="history-score-badge" style="background:${bg};color:${color};">${score}%</div>
+        <div class="history-meta">
+          <div style="font-size:0.875rem;font-weight:600;margin-bottom:0.2rem;">${item.jobTitle || item.job_title || 'Role Match'}</div>
+          <div class="history-jd-preview">${jdPreview}</div>
+        </div>
+        <div class="history-date">${formatDate(dateStr)}</div>
+      </div>
+    `;
+  }
+
+  // ── Init ───────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (typeof onAuthRequired === 'function') {
+      const user = await onAuthRequired('/login');
+      if (!user) return;
+    }
+    await loadResumeState();
+    await loadJobHistory();
+  });
+</script>
+</body>
+</html>

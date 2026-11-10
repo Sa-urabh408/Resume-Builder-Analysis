@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In — ResumeAI</title>
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <style>
+    .auth-page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2.5rem 1.5rem;
+      background-color: var(--bg-primary);
+    }
+    .auth-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      text-decoration: none;
+    }
+    .auth-brand .logo-box {
+      width: 26px;
+      height: 26px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: var(--radius-xs);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-serif);
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+    .auth-brand span {
+      font-family: var(--font-serif);
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .auth-container {
+      width: 100%;
+      max-width: 440px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 2.5rem 2.25rem;
+      box-shadow: var(--shadow-card);
+    }
+    .auth-header {
+      margin-bottom: 1.75rem;
+      text-align: left;
+    }
+    .auth-header h1 {
+      font-size: 1.85rem;
+      margin-bottom: 0.35rem;
+      font-weight: 500;
+    }
+    .auth-header p {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+    .divider-text {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 1.5rem 0;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .divider-text::before, .divider-text::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid var(--border);
+    }
+    .divider-text:not(:empty)::before { margin-right: 0.75rem; }
+    .divider-text:not(:empty)::after { margin-left: 0.75rem; }
+    .auth-footer {
+      margin-top: 1.75rem;
+      text-align: center;
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      border-top: 1px solid var(--border);
+      padding-top: 1.25rem;
+    }
+    .auth-footer a {
+      color: var(--accent);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-page">
+    <a href="/" class="auth-brand">
+      <div class="logo-box">R</div>
+      <span>ResumeAI</span>
+    </a>
+
+    <div class="auth-container">
+      <div class="auth-header">
+        <span class="section-tag">Account Access</span>
+        <h1>Sign in</h1>
+        <p>Access your resume evaluations and learning roadmap.</p>
+      </div>
+
+      <div id="error-alert" class="alert alert-error" style="display:none;"></div>
+      <div id="success-alert" class="alert alert-success" style="display:none;"></div>
+
+      <form id="login-form" autocomplete="on">
+        <div class="form-group">
+          <label class="form-label" for="email">Email address</label>
+          <input type="email" id="email" class="form-input" placeholder="name@example.com" required />
+        </div>
+
+        <div class="form-group">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.35rem;">
+            <label class="form-label" for="password" style="margin:0;">Password</label>
+            <a href="/forgot-password" style="font-size:0.78rem;color:var(--text-muted);">Forgot password?</a>
+          </div>
+          <input type="password" id="password" class="form-input" placeholder="Enter password" required />
+        </div>
+
+        <button type="submit" id="submit-btn" class="btn btn-primary btn-full" style="margin-top: 0.5rem;">
+          Sign in
+        </button>
+      </form>
+
+      <div class="divider-text">or</div>
+
+      <button type="button" id="google-btn" class="btn btn-secondary btn-full">
+        <svg width="16" height="16" viewBox="0 0 24 24" style="margin-right:6px;">
+          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.35 24 12 24z"/>
+          <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.35 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+        </svg>
+        Sign in with Google
+      </button>
+
+      <div class="auth-footer">
+        Do not have an account? <a href="/signup">Create one</a>
+      </div>
+    </div>
+  </div>
+
+  {% include 'partials/firebase_boot.html' %}
+  <script type="module">
+    import { auth, redirectIfLoggedIn, syncUserProfile, firebaseAuthMessage } from "/static/js/main.js";
+    import {
+      signInWithEmailAndPassword,
+      signInWithPopup,
+      GoogleAuthProvider,
+    } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+
+    const googleSvg = `<svg width="16" height="16" viewBox="0 0 24 24" style="margin-right:6px;">
+      <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+      <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.35 24 12 24z"/>
+      <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+      <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.35 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+    </svg>`;
+
+    await redirectIfLoggedIn("/dashboard");
+
+    const form = document.getElementById("login-form");
+    const submitBtn = document.getElementById("submit-btn");
+    const googleBtn = document.getElementById("google-btn");
+    const errBox = document.getElementById("error-alert");
+
+    function showError(msg) {
+      console.error(msg);
+      errBox.textContent = msg;
+      errBox.style.display = "block";
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errBox.style.display = "none";
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      if (!email || !password) {
+        showError("Please enter both email and password.");
+        return;
+      }
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Signing in...";
+      try {
+        const cred = await signInWithEmailAndPassword(auth, email, password);
+        await syncUserProfile(cred.user, { fullName: cred.user.displayName || email.split("@")[0] });
+        window.location.href = "/dashboard";
+      } catch (err) {
+        console.error("Firebase sign-in error:", err);
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Sign in";
+        showError(firebaseAuthMessage(err));
+      }
+    });
+
+    googleBtn.addEventListener("click", async () => {
+      errBox.style.display = "none";
+      googleBtn.disabled = true;
+      googleBtn.textContent = "Connecting Google...";
+      try {
+        const provider = new GoogleAuthProvider();
+        const cred = await signInWithPopup(auth, provider);
+        await syncUserProfile(cred.user);
+        window.location.href = "/dashboard";
+      } catch (err) {
+        console.error("Google sign-in error:", err);
+        googleBtn.disabled = false;
+        googleBtn.innerHTML = googleSvg + "Sign in with Google";
+        showError(firebaseAuthMessage(err));
+      }
+    });
+  </script>
+</body>
+</html>

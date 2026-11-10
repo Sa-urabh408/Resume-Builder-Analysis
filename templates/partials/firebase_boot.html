@@ -1,0 +1,11 @@
+<script>
+  window.FIREBASE_CONFIG = {
+    apiKey: {{ firebase.apiKey | default('', true) | tojson }},
+    authDomain: {{ firebase.authDomain | default('', true) | tojson }},
+    projectId: {{ firebase.projectId | default('', true) | tojson }},
+    storageBucket: {{ firebase.storageBucket | default('', true) | tojson }},
+    messagingSenderId: {{ firebase.messagingSenderId | default('', true) | tojson }},
+    appId: {{ firebase.appId | default('', true) | tojson }}
+  };
+</script>
+<script type="module" src="/static/js/main.js"></script>

@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile – ResumeAI</title>
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <style>
+    .profile-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: var(--gradient-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 1px;
+      flex-shrink: 0;
+    }
+    .avatar-row {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .avatar-info h3 { margin: 0 0 0.25rem; font-size: 1.15rem; }
+    .avatar-info p  { margin: 0; color: var(--text-muted); font-size: 0.875rem; }
+
+    .profile-section {
+      margin-bottom: 2rem;
+    }
+    .profile-section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 640px) {
+      .form-grid-2 { grid-template-columns: 1fr; }
+    }
+
+    /* Completion bar */
+    .completion-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .completion-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.6rem;
+    }
+    .completion-label { font-size: 0.9rem; color: var(--text-secondary); }
+    .completion-pct   { font-size: 1.1rem; font-weight: 700; color: var(--brand-blue); }
+    .completion-bar-wrap {
+      background: var(--bg-secondary);
+      border-radius: 99px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .completion-bar {
+      height: 100%;
+      border-radius: 99px;
+      background: var(--gradient-primary);
+      transition: width 0.6s ease;
+    }
+
+    /* Account section */
+    .account-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.85rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .account-row:last-child { border-bottom: none; }
+    .account-row-label { color: var(--text-secondary); font-size: 0.875rem; }
+    .account-row-value { font-size: 0.9rem; color: var(--text-primary); font-weight: 500; }
+
+    /* Delete modal */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 900;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-backdrop.active { display: flex; }
+    .modal-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-accent);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      max-width: 420px;
+      width: 90%;
+    }
+    .modal-box h3 { margin: 0 0 0.75rem; }
+    .modal-box p  { color: var(--text-secondary); margin: 0 0 1.5rem; line-height: 1.6; }
+    .modal-actions { display: flex; gap: 0.75rem; }
+
+    .readonly-input {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    textarea.form-input {
+      resize: vertical;
+      min-height: 90px;
+    }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  {% include 'partials/sidebar.html' %}
+
+  <!-- Main Content -->
+  <div class="main-content">
+    {% with topbar_label="Profile Settings" %}
+      {% include 'partials/topbar.html' %}
+    {% endwith %}
+
+    <div class="page-content">
+      <div class="loading-overlay" id="page-loading">
+        <div class="spinner"></div>
+      </div>
+
+      <!-- Profile completion -->
+      <div class="completion-card">
+        <div class="completion-header">
+          <span class="completion-label">Profile Completion</span>
+          <span class="completion-pct" id="completion-pct">0%</span>
+        </div>
+        <div class="completion-bar-wrap">
+          <div class="completion-bar" id="completion-bar" style="width:0%"></div>
+        </div>
+        <p style="margin:0.5rem 0 0;font-size:0.8rem;color:var(--text-muted);" id="completion-hint">Fill in all fields to complete your profile.</p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 360px;gap:1.5rem;" class="profile-layout">
+
+        <!-- LEFT: Form -->
+        <div>
+          <div class="card">
+            <form id="profile-form" novalidate>
+
+              <!-- Avatar row -->
+              <div class="avatar-row">
+                <div class="profile-avatar" id="avatar-initials">?</div>
+                <div class="avatar-info">
+                  <h3 id="avatar-name">Loading…</h3>
+                  <p id="avatar-email">—</p>
+                </div>
+              </div>
+
+              <!-- Section 1: Personal Info -->
+              <div class="profile-section">
+                <div class="profile-section-title">Personal Information</div>
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label class="form-label" for="full-name">Full Name</label>
+                    <input id="full-name" name="fullName" type="text" class="form-input" placeholder="Your full name" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="email-display">Email Address</label>
+                    <input id="email-display" type="email" class="form-input readonly-input" readonly placeholder="From Firebase auth" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section 2: Education -->
+              <div class="profile-section">
+                <div class="profile-section-title">Education</div>
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label class="form-label" for="degree">Degree</label>
+                    <select id="degree" name="degree" class="form-input form-select">
+                      <option value="">Select degree</option>
+                      <option value="B.Tech">B.Tech</option>
+                      <option value="B.E.">B.E.</option>
+                      <option value="B.Sc">B.Sc</option>
+                      <option value="BCA">BCA</option>
+                      <option value="MCA">MCA</option>
+                      <option value="M.Tech">M.Tech</option>
+                      <option value="M.Sc">M.Sc</option>
+                      <option value="MBA">MBA</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="education-level">Education Level</label>
+                    <select id="education-level" name="educationLevel" class="form-input form-select">
+                      <option value="">Select level</option>
+                      <option value="Undergraduate">Undergraduate</option>
+                      <option value="Graduate">Graduate</option>
+                      <option value="Post Graduate">Post Graduate</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="branch">Branch / Field of Study</label>
+                    <input id="branch" name="branch" type="text" class="form-input" placeholder="e.g. Computer Science" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="college">College / University</label>
+                    <input id="college" name="college" type="text" class="form-input" placeholder="e.g. IIT Delhi" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section 3: Career Info -->
+              <div class="profile-section">
+                <div class="profile-section-title">Career Information</div>
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label class="form-label" for="experience-level">Experience Level</label>
+                    <select id="experience-level" name="experienceLevel" class="form-input form-select">
+                      <option value="">Select experience</option>
+                      <option value="Student/Fresher">Student / Fresher</option>
+                      <option value="0-1 Year">0–1 Year</option>
+                      <option value="1-3 Years">1–3 Years</option>
+                      <option value="3-5 Years">3–5 Years</option>
+                      <option value="5+ Years">5+ Years</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="target-role">Target Role</label>
+                    <select id="target-role" name="targetRole" class="form-input form-select">
+                      <option value="">Select target role</option>
+                      <option value="Android Developer">Android Developer</option>
+                      <option value="Web Developer">Web Developer</option>
+                      <option value="Python Developer">Python Developer</option>
+                      <option value="Data Analyst">Data Analyst</option>
+                      <option value="Data Scientist">Data Scientist</option>
+                      <option value="Software Developer">Software Developer</option>
+                      <option value="Backend Developer">Backend Developer</option>
+                      <option value="Frontend Developer">Frontend Developer</option>
+                      <option value="Full Stack Developer">Full Stack Developer</option>
+                      <option value="UI/UX Designer">UI/UX Designer</option>
+                      <option value="DevOps Engineer">DevOps Engineer</option>
+                      <option value="Cloud Engineer">Cloud Engineer</option>
+                      <option value="Machine Learning Engineer">Machine Learning Engineer</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="career-goal">Career Goal</label>
+                  <textarea id="career-goal" name="careerGoal" class="form-input" placeholder="Describe your career goal, what you want to achieve, and where you see yourself in 5 years…" rows="4"></textarea>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-lg" id="save-btn" style="min-width:180px;">
+                💾 Save Profile
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- RIGHT: Account & Info -->
+        <div style="display:flex;flex-direction:column;gap:1.25rem;">
+
+          <!-- Account section -->
+          <div class="card">
+            <h3 style="margin:0 0 1rem;font-size:1rem;font-weight:600;">Account Settings</h3>
+
+            <div class="account-row">
+              <span class="account-row-label">Email</span>
+              <span class="account-row-value" id="acct-email">—</span>
+            </div>
+            <div class="account-row">
+              <span class="account-row-label">Password</span>
+              <button class="btn btn-secondary btn-sm" id="change-password-btn">Change Password</button>
+            </div>
+            <div class="account-row" style="border-bottom:none;">
+              <span class="account-row-label">Account</span>
+              <button class="btn btn-danger btn-sm" id="delete-account-btn">Delete Account</button>
+            </div>
+          </div>
+
+          <!-- Tips card -->
+          <div class="card" style="background:rgba(59,130,246,0.06);border-color:var(--border-accent);">
+            <h4 style="margin:0 0 0.75rem;font-size:0.9rem;color:var(--brand-blue);">💡 Profile Tips</h4>
+            <ul style="margin:0;padding-left:1.2rem;color:var(--text-secondary);font-size:0.85rem;line-height:1.8;">
+              <li>A complete profile improves job match accuracy.</li>
+              <li>Set your target role to get tailored skill suggestions.</li>
+              <li>Describe your career goal to guide AI recommendations.</li>
+            </ul>
+          </div>
+
+          <!-- Danger zone card -->
+          <div class="card" style="border-color:#ef444450;">
+            <h4 style="margin:0 0 0.5rem;font-size:0.9rem;color:#ef4444;">⚠️ Danger Zone</h4>
+            <p style="margin:0 0 1rem;font-size:0.8rem;color:var(--text-muted);">Deleting your account is permanent and cannot be undone. All your data, analyses, and certificates will be erased.</p>
+            <button class="btn btn-danger btn-sm btn-full" id="delete-account-btn-2">Delete My Account</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirmation modal -->
+<div class="modal-backdrop" id="delete-modal">
+  <div class="modal-box">
+    <h3>🗑️ Delete Account?</h3>
+    <p>This action is <strong>permanent</strong>. Your profile, all resume analyses, skill data, and certificates will be permanently deleted and cannot be recovered.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="cancel-delete-btn" style="flex:1;">Cancel</button>
+      <button class="btn btn-danger" id="confirm-delete-btn" style="flex:1;">Yes, Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase -->
+  {% include 'partials/firebase_boot.html' %}
+<script type="module">
+import { auth, logoutUser, onAuthRequired, apiCall, showToast } from "/static/js/main.js";
+import { sendPasswordResetEmail, deleteUser } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+(function () {
+  /* ── Tracked fields for completion ── */
+  const TRACKED_FIELDS = [
+    'full-name', 'degree', 'education-level',
+    'branch', 'college', 'experience-level',
+    'target-role', 'career-goal'
+  ];
+
+  /* ── Helpers ── */
+  function initials(name) {
+    if (!name) return '?';
+    return name.trim().split(/\s+/).map(w => w[0]).join('').slice(0,2).toUpperCase();
+  }
+
+  function updateCompletion() {
+    const total  = TRACKED_FIELDS.length;
+    const filled = TRACKED_FIELDS.filter(id => {
+      const el = document.getElementById(id);
+      return el && el.value.trim() !== '';
+    }).length;
+    const pct = Math.round((filled / total) * 100);
+    document.getElementById('completion-pct').textContent  = pct + '%';
+    document.getElementById('completion-bar').style.width  = pct + '%';
+    const missing = total - filled;
+    document.getElementById('completion-hint').textContent =
+      missing === 0
+        ? '✅ Profile is complete!'
+        : `${missing} field${missing > 1 ? 's' : ''} remaining to complete your profile.`;
+  }
+
+  /* ── Populate form ── */
+  function populateForm(data) {
+    const setVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el && val != null) el.value = val;
+    };
+    setVal('full-name',        data.fullName);
+    setVal('degree',           data.degree);
+    setVal('education-level',  data.educationLevel);
+    setVal('branch',           data.branch);
+    setVal('college',          data.college);
+    setVal('experience-level', data.experienceLevel);
+    setVal('target-role',      data.targetRole);
+    setVal('career-goal',      data.careerGoal);
+  }
+
+  /* ── Page init (runs after auth is confirmed) ── */
+  async function initPage(user) {
+    document.getElementById('page-loading').style.display = 'none';
+
+    /* Fill auth-derived fields */
+    const email     = user.email || '';
+    const name      = user.displayName || '';
+    document.getElementById('email-display').value  = email;
+    document.getElementById('avatar-email').textContent = email;
+    document.getElementById('acct-email').textContent   = email;
+
+    if (name) {
+      document.getElementById('full-name').value       = name;
+      document.getElementById('avatar-name').textContent = name;
+      document.getElementById('avatar-initials').textContent = initials(name);
+    }
+
+    /* Load profile from API */
+    try {
+      const res = await apiCall('/api/auth/profile', 'GET');
+      if (res && res.profile) {
+        populateForm(res.profile);
+        const n = res.profile.fullName || name;
+        document.getElementById('avatar-name').textContent      = n || email;
+        document.getElementById('avatar-initials').textContent  = initials(n || email);
+      }
+    } catch (err) {
+      console.warn('Profile load error:', err);
+    }
+
+    updateCompletion();
+
+    /* Live completion update */
+    TRACKED_FIELDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', updateCompletion);
+    });
+
+    /* Avatar name sync */
+    document.getElementById('full-name').addEventListener('input', function () {
+      const n = this.value.trim();
+      document.getElementById('avatar-name').textContent      = n || email;
+      document.getElementById('avatar-initials').textContent  = initials(n || email);
+    });
+  }
+
+  /* ── Save profile ── */
+  document.getElementById('profile-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const btn = document.getElementById('save-btn');
+    btn.disabled    = true;
+    btn.textContent = 'Saving…';
+
+    const payload = {
+      fullName:       document.getElementById('full-name').value.trim(),
+      degree:         document.getElementById('degree').value,
+      educationLevel: document.getElementById('education-level').value,
+      branch:         document.getElementById('branch').value.trim(),
+      college:        document.getElementById('college').value.trim(),
+      experienceLevel:document.getElementById('experience-level').value,
+      targetRole:     document.getElementById('target-role').value,
+      careerGoal:     document.getElementById('career-goal').value.trim(),
+    };
+
+    try {
+      await apiCall('/api/auth/profile', 'PUT', payload);
+      showToast('Profile saved successfully!', 'success');
+      updateCompletion();
+    } catch (err) {
+      showToast(err.message || 'Failed to save profile.', 'error');
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = '💾 Save Profile';
+    }
+  });
+
+  /* ── Change password ── */
+  async function handleChangePassword() {
+    const btn = document.getElementById('change-password-btn');
+    btn.disabled    = true;
+    btn.textContent = 'Sending…';
+    try {
+      const user  = auth.currentUser;
+      const email = user ? user.email : null;
+      if (!email) throw new Error('No email associated with this account.');
+      await sendPasswordResetEmail(auth, email);
+      showToast('Password reset email sent! Check your inbox.', 'success');
+    } catch (err) {
+      showToast(err.message || 'Failed to send reset email.', 'error');
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = 'Change Password';
+    }
+  }
+  document.getElementById('change-password-btn').addEventListener('click', handleChangePassword);
+
+  /* ── Delete account modal ── */
+  function openDeleteModal() {
+    document.getElementById('delete-modal').classList.add('active');
+  }
+  function closeDeleteModal() {
+    document.getElementById('delete-modal').classList.remove('active');
+  }
+  document.getElementById('delete-account-btn').addEventListener('click',   openDeleteModal);
+  document.getElementById('delete-account-btn-2').addEventListener('click', openDeleteModal);
+  document.getElementById('cancel-delete-btn').addEventListener('click',    closeDeleteModal);
+  document.getElementById('delete-modal').addEventListener('click', function (e) {
+    if (e.target === this) closeDeleteModal();
+  });
+
+  document.getElementById('confirm-delete-btn').addEventListener('click', async function () {
+    const btn = this;
+    btn.disabled    = true;
+    btn.textContent = 'Deleting…';
+    try {
+      /* Call backend to remove Firestore data first */
+      await apiCall('/api/auth/profile', 'DELETE');
+      /* Then delete the Firebase Auth account if exists */
+      if (auth && auth.currentUser) {
+        try { await deleteUser(auth.currentUser); } catch(e) {}
+      }
+      showToast('Account deleted.', 'success');
+      setTimeout(() => { window.location.href = '/'; }, 1500);
+    } catch (err) {
+      showToast(err.message || 'Failed to delete account. You may need to re-login.', 'error');
+      btn.disabled    = false;
+      btn.textContent = 'Yes, Delete';
+    }
+  });
+
+  /* ── Logout ── */
+  document.getElementById('logout-btn').addEventListener('click', async function () {
+    await logoutUser();
+    window.location.href = '/login';
+  });
+
+  /* ── Auth gate ── */
+  onAuthRequired(initPage);
+})();
+</script>
+
+<style>
+  @media (max-width: 900px) {
+    .profile-layout { grid-template-columns: 1fr !important; }
+  }
+</style>
+</body>
+</html>

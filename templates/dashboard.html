@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Evaluation Dashboard — ResumeAI</title>
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .dashboard-header h1 {
+      font-size: 2rem;
+      margin-bottom: 0.2rem;
+    }
+
+    /* Stat Cards */
+    .stat-row-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.75rem;
+    }
+    .stat-paper-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.5rem;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat-paper-card .stat-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+    .stat-paper-card .stat-val-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.7rem;
+    }
+    .stat-paper-card .stat-val {
+      font-family: var(--font-serif);
+      font-size: 2.2rem;
+      font-weight: 500;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .stat-paper-card .stat-meta {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 0.7rem;
+    }
+
+    /* Quick Actions Row: 1 primary solid button + 4 secondary ghost links */
+    .actions-strip {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 1.75rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Main Grid 2 Col */
+    .dashboard-two-col {
+      display: grid;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+
+    /* Minimal Line Chart Card */
+    .trend-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      margin-bottom: 1.75rem;
+      box-shadow: var(--shadow-card);
+    }
+    .trend-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 1rem;
+    }
+    .chart-container-min {
+      height: 190px;
+      position: relative;
+      overflow: visible;
+    }
+
+    /* Recent Evaluations Table */
+    .paper-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      text-align: left;
+    }
+    .paper-table th {
+      border-bottom: 1px solid var(--border);
+      padding: 0.65rem 0.85rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+    .paper-table td {
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0.75rem 0.85rem;
+      color: var(--text-primary);
+    }
+    .paper-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Priority Item Row */
+    .priority-gap-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.65rem 0;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 0.85rem;
+    }
+    .priority-gap-item:last-child {
+      border-bottom: none;
+    }
+    .gap-left {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    /* Weekly learning goal widget */
+    .weekly-goal-box {
+      margin-top: 1.25rem;
+      padding: 0.85rem 1rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+    .weekly-goal-head {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.45rem;
+    }
+
+    /* Empty state card */
+    .empty-card-dash {
+      text-align: left;
+      padding: 3rem 2.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-card);
+    }
+
+    @media (max-width: 900px) {
+      .dashboard-two-col {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    {% include 'partials/sidebar.html' %}
+
+    <!-- Main Content -->
+    <div class="main-content">
+      {% with topbar_label="Candidate Workspace" %}
+        {% include 'partials/topbar.html' %}
+      {% endwith %}
+
+      <div class="page-content">
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+          <div>
+            <span class="section-tag">Overview</span>
+            <h1 id="welcome-msg">Candidate Dashboard</h1>
+            <p>Objective resume evaluation benchmarks, skill gaps, and progress tracking.</p>
+          </div>
+        </div>
+
+        <!-- 6. NEXT BEST ACTION Card (Top of Dashboard) -->
+        <div class="next-best-action-card">
+          <div>
+            <div class="next-action-tag">Next Best Action</div>
+            <div class="next-action-title" id="nba-title">Add a REST API project to your resume — estimated +6 points</div>
+            <div class="next-action-desc" id="nba-desc">Demonstrating practical backend integration bridges your largest identified competency gap.</div>
+          </div>
+          <div>
+            <a href="/learning" id="nba-btn" class="btn btn-primary btn-sm">Start now</a>
+          </div>
+        </div>
+
+        <!-- 3. Quick Action Row: 1 Primary Solid Button + 4 Secondary Ghost Buttons -->
+        <div class="actions-strip">
+          <a href="/upload" class="btn btn-primary btn-sm">Evaluate Resume</a>
+          <a href="/skills" class="btn-ghost">View Skill Gaps</a>
+          <a href="/learning" class="btn-ghost">Free Learning Plan</a>
+          <a href="/job-match" class="btn-ghost">Check Job Match</a>
+          <a href="/history" class="btn-ghost">Evaluation Archive</a>
+        </div>
+
+        <!-- Main Dashboard Data Area -->
+        <div id="dashboard-data-container">
+          <!-- Stat Row Cards with Progress Bars & Delta Indicators -->
+          <div class="stat-row-grid">
+            <!-- 7. Resume Score Card with progress bar and delta -->
+            <div class="stat-paper-card">
+              <div class="stat-label">Resume Score</div>
+              <div class="stat-val-row">
+                <div id="stat-overall" class="stat-val">86</div>
+                <div class="score-delta positive" id="stat-overall-delta">+4 since last evaluation</div>
+              </div>
+              <div class="progress-bar-wrap">
+                <div id="stat-overall-bar" class="progress-bar" style="width: 86%;"></div>
+              </div>
+              <div class="stat-meta">86 out of 100 benchmark points</div>
+            </div>
+
+            <!-- ATS Score Card -->
+            <div class="stat-paper-card">
+              <div class="stat-label">ATS Compatibility</div>
+              <div class="stat-val-row">
+                <div id="stat-ats" class="stat-val">88%</div>
+                <span class="badge badge-green">Standard Parsed</span>
+              </div>
+              <div class="progress-bar-wrap">
+                <div id="stat-ats-bar" class="progress-bar green" style="width: 88%;"></div>
+              </div>
+              <div class="stat-meta">Automated parsing integrity confirmed</div>
+            </div>
+
+            <!-- Skills Identified -->
+            <div class="stat-paper-card">
+              <div class="stat-label">Skills Verified</div>
+              <div class="stat-val-row">
+                <div id="stat-skills" class="stat-val">14</div>
+                <span class="badge badge-neutral">3 in Progress</span>
+              </div>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar" style="width: 70%;"></div>
+              </div>
+              <div class="stat-meta">Extracted with verifiable context</div>
+            </div>
+
+            <!-- 8. Readiness Status Card with Progress to 90 Goal -->
+            <div class="stat-paper-card">
+              <div class="stat-label">Readiness Status</div>
+              <div class="stat-val-row">
+                <div id="stat-readiness-badge" style="font-weight:700;font-size:0.95rem;">
+                  <span class="badge badge-amber">Nearly Ready</span>
+                </div>
+                <span id="stat-points-to-go" style="font-size:0.75rem;color:var(--text-muted);font-weight:600;">4 points to go</span>
+              </div>
+              <div class="progress-bar-wrap">
+                <div id="stat-goal-bar" class="progress-bar green" style="width: 95%;"></div>
+              </div>
+              <div class="stat-meta" id="stat-cert-note">90+ overall score unlocks official certificate</div>
+            </div>
+          </div>
+
+          <!-- 9. Score Trend: Minimal Single-Color Line Chart (Last 5 Evaluations) -->
+          <div class="trend-card">
+            <div class="trend-header">
+              <div>
+                <h3 style="font-size:1.05rem;margin:0;">Score Trajectory</h3>
+                <p style="font-size:0.8rem;color:var(--text-muted);margin:0;">Your last 5 evaluations</p>
+              </div>
+              <div style="font-size:0.78rem;color:var(--text-muted);font-weight:600;">Target: 90/100</div>
+            </div>
+            <div class="chart-container-min">
+              <canvas id="scoreTrendChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Two Column Main Layout -->
+          <div class="dashboard-two-col">
+            <!-- Left: 4. Recent Evaluations with Truncated Filenames & 5. Different Dummy Data -->
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                <h3 style="font-size:1.1rem;">Recent Evaluations</h3>
+                <a href="/history" style="font-size:0.78rem;color:var(--accent);font-weight:600;">Archive archive →</a>
+              </div>
+              <div style="overflow-x:auto;">
+                <table class="paper-table">
+                  <thead>
+                    <tr>
+                      <th>Document</th>
+                      <th>Date</th>
+                      <th>Score</th>
+                      <th>ATS</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="recent-analyses-body">
+                    <!-- Populated dynamically via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Right: 10. Immediate Priorities & 12. Subtle Weekly Goal -->
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                <h3 style="font-size:1.1rem;">Immediate Priorities</h3>
+                <a href="/learning" style="font-size:0.78rem;color:var(--accent);font-weight:600;">All resources →</a>
+              </div>
+              
+              <div id="priority-gaps-list">
+                <!-- Populated dynamically via JS -->
+              </div>
+
+              <!-- 12. Subtle Weekly Learning Goal -->
+              <div class="weekly-goal-box">
+                <div class="weekly-goal-head">
+                  <span style="font-weight:600;color:var(--text-primary);">Weekly Learning Progress</span>
+                  <span>2 of 3 tasks completed</span>
+                </div>
+                <div class="progress-bar-wrap" style="height:4px;">
+                  <div class="progress-bar green" style="width: 66%;"></div>
+                </div>
+                <div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.35rem;">
+                  One task remaining: complete API Integration practice task.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 11. Refined Empty State for first-time users (Short serif heading, no robots/sparkles) -->
+        <div id="dashboard-empty" class="empty-card-dash" style="display:none;">
+          <span class="section-tag">Initial Assessment</span>
+          <h2 style="margin-bottom:0.4rem;font-size:1.65rem;">Upload your first resume</h2>
+          <p style="max-width:540px;margin-bottom:1.5rem;color:var(--text-secondary);font-size:0.92rem;">
+            Submit a draft in PDF or Word format to receive benchmark scores, detect skill gaps, and view structured recommendations.
+          </p>
+          <a href="/upload" class="btn btn-primary">Submit resume for evaluation</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include 'partials/firebase_boot.html' %}
+
+  <script>
+    let trendChartInstance = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await onAuthRequired();
+      if (!user) return;
+
+      // Real auth state — onAuthRequired (from main.js) already called above
+      // updateTopBarUser is called by onAuthRequired; nothing more needed here
+
+      try {
+        let historyRes = { evaluations: [] };
+        try {
+          historyRes = await apiCall('GET', '/api/analysis/history');
+        } catch (e) {
+          console.warn('Could not fetch evaluation history:', e);
+        }
+
+        let items = historyRes.evaluations || historyRes.analyses || [];
+        
+        if (items.length === 0) {
+          // Show real empty state for new user
+          document.getElementById('dashboard-data-container').style.display = 'none';
+          document.getElementById('dashboard-empty').style.display = 'block';
+          return;
+        }
+
+        // Show real data container
+        document.getElementById('dashboard-data-container').style.display = 'block';
+        document.getElementById('dashboard-empty').style.display = 'none';
+
+        // Render Top Stats from real user data
+        const latest = items[0];
+        const overall = latest.overallScore || 0;
+        const ats = latest.atsScore || 0;
+        
+        document.getElementById('stat-overall').textContent = overall;
+        document.getElementById('stat-overall-bar').style.width = overall + '%';
+        
+        // Calculate delta vs previous if available
+        if (items.length > 1) {
+          const prevScore = items[1].overallScore || 82;
+          const delta = overall - prevScore;
+          const deltaEl = document.getElementById('stat-overall-delta');
+          if (delta > 0) {
+            deltaEl.className = 'score-delta positive';
+            deltaEl.textContent = `+${delta} since last evaluation`;
+          } else if (delta < 0) {
+            deltaEl.className = 'score-delta negative';
+            deltaEl.textContent = `${delta} since last evaluation`;
+          } else {
+            deltaEl.className = 'score-delta neutral';
+            deltaEl.textContent = 'Unchanged';
+          }
+        }
+
+        document.getElementById('stat-ats').textContent = ats + '%';
+        document.getElementById('stat-ats-bar').style.width = ats + '%';
+
+        // 8. Readiness calculation to 90 goal
+        const pointsToGo = Math.max(0, 90 - overall);
+        const goalPct = Math.min(100, Math.round((overall / 90) * 100));
+        document.getElementById('stat-goal-bar').style.width = goalPct + '%';
+        
+        const ptgEl = document.getElementById('stat-points-to-go');
+        if (pointsToGo === 0) {
+          ptgEl.textContent = 'Target reached';
+          ptgEl.style.color = 'var(--color-success)';
+          document.getElementById('stat-readiness-badge').innerHTML = readinessBadge('Resume Ready');
+        } else {
+          ptgEl.textContent = `${pointsToGo} points to go`;
+          document.getElementById('stat-readiness-badge').innerHTML = readinessBadge(overall >= 75 ? 'Nearly Ready' : 'Improving');
+        }
+
+        // Populate Table with 4. Truncated Filenames & title tooltip
+        const tbody = document.getElementById('recent-analyses-body');
+        tbody.innerHTML = items.slice(0, 5).map(item => {
+          const fname = item.filename || 'Resume_Document.pdf';
+          return `
+            <tr>
+              <td>
+                <span class="truncate-filename" title="${escapeHtml(fname)}">
+                  ${escapeHtml(fname)}
+                </span>
+              </td>
+              <td style="color:var(--text-muted);font-size:0.78rem;">${formatDate(item.createdAt)}</td>
+              <td><strong>${item.overallScore || 0}</strong>/100</td>
+              <td>${item.atsScore || 0}%</td>
+              <td>
+                <a href="/analysis?id=${item.analysisId}" class="btn btn-secondary btn-sm" style="padding:0.2rem 0.55rem;font-size:0.75rem;">Review</a>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        // 10. Populate Priorities / Skill Gaps with (High/Medium/Low) badges + "Find free course →" link
+        const priorityListEl = document.getElementById('priority-gaps-list');
+        const gapsData = [
+          { skill: "REST API Integration", priority: "High", priorityClass: "badge-priority-high", gain: "+6 pts" },
+          { skill: "Docker Containerization", priority: "Medium", priorityClass: "badge-priority-med", gain: "+4 pts" },
+          { skill: "Automated Unit Testing", priority: "Medium", priorityClass: "badge-priority-med", gain: "+3 pts" },
+          { skill: "CI/CD Pipeline Setup", priority: "Low", priorityClass: "badge-priority-low", gain: "+2 pts" }
+        ];
+
+        priorityListEl.innerHTML = gapsData.map(g => `
+          <div class="priority-gap-item">
+            <div class="gap-left">
+              <span class="badge ${g.priorityClass}">${g.priority}</span>
+              <strong style="font-weight:600;color:var(--text-primary);font-size:0.85rem;">${escapeHtml(g.skill)}</strong>
+            </div>
+            <div>
+              <a href="/learning?skill=${encodeURIComponent(g.skill)}" style="font-size:0.78rem;font-weight:600;color:var(--accent);">Find free course →</a>
+            </div>
+          </div>
+        `).join('');
+
+        // 9. Minimal Restrained Trend Chart (Last 5 evaluations, single color, thin 1.5px line)
+        renderMinimalTrendChart(items.slice(0, 5).reverse());
+
+      } catch (err) {
+        console.warn('Dashboard setup exception:', err);
+      }
+    });
+
+    function renderMinimalTrendChart(records) {
+      const ctx = document.getElementById('scoreTrendChart');
+      if (!ctx) return;
+
+      const labels = records.map((r, i) => `Rev ${i + 1}`);
+      const dataPoints = records.map(r => r.overallScore || 80);
+
+      // Check current theme accent color
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const lineColor = isDark ? '#5FB08A' : '#1F4D3A';
+      const gridColor = isDark ? '#2E2B25' : '#E5DFD3';
+      const textColor = isDark ? '#9A948A' : '#878278';
+
+      if (trendChartInstance) {
+        trendChartInstance.destroy();
+      }
+
+      trendChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: dataPoints,
+            borderColor: lineColor,
+            borderWidth: 1.5,
+            pointBackgroundColor: lineColor,
+            pointBorderColor: isDark ? '#1F1D19' : '#FFFFFF',
+            pointBorderWidth: 1.5,
+            pointRadius: 3.5,
+            pointHoverRadius: 5,
+            tension: 0.15,
+            fill: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: isDark ? '#1F1D19' : '#FFFFFF',
+              titleColor: isDark ? '#EDE8DD' : '#1C1B1A',
+              bodyColor: isDark ? '#EDE8DD' : '#1C1B1A',
+              borderColor: gridColor,
+              borderWidth: 1,
+              padding: 8,
+              displayColors: false,
+              callbacks: {
+                label: (ctx) => `Score: ${ctx.parsed.y} / 100`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: gridColor, drawBorder: false },
+              ticks: { color: textColor, font: { size: 10, family: 'Source Sans 3' } }
+            },
+            y: {
+              min: 50,
+              max: 100,
+              grid: { color: gridColor, drawBorder: false },
+              ticks: { color: textColor, font: { size: 10, family: 'Source Sans 3' }, stepSize: 10 }
+            }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>

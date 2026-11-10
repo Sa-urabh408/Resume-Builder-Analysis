@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resume Progress Comparison — ResumeAI</title>
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .compare-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .compare-header h1 { margin: 0; font-size: 1.8rem; }
+    .compare-header p { color: var(--text-muted); margin-top: 0.25rem; font-size: 0.9rem; }
+
+    /* Selection bar */
+    .compare-selectors-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .selector-group {
+      flex: 1;
+      min-width: 220px;
+    }
+
+    /* Score Summary Cards */
+    .score-compare-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .score-compare-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      position: relative;
+      overflow: hidden;
+      transition: var(--transition);
+    }
+    .score-compare-card:hover {
+      border-color: var(--border-accent);
+      transform: translateY(-2px);
+    }
+    .sc-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+    .sc-values {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+    }
+    .sc-val-prev {
+      font-size: 1.4rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .sc-arrow {
+      font-size: 1.2rem;
+      color: var(--text-muted);
+    }
+    .sc-val-curr {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+    .delta-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.2rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.2rem 0.55rem;
+      border-radius: var(--radius-full);
+      margin-top: 0.5rem;
+    }
+    .delta-pos {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34D399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .delta-neg {
+      background: rgba(239, 68, 68, 0.15);
+      color: #F87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .delta-zero {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+    }
+
+    /* Side by side chart container */
+    .chart-container-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    /* Comparison Table */
+    .compare-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      margin-bottom: 2rem;
+    }
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    .compare-table th, .compare-table td {
+      padding: 1rem 1.25rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .compare-table th {
+      background: var(--bg-secondary);
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .compare-table tr:last-child td { border-bottom: none; }
+    .compare-table tr:hover { background: var(--bg-secondary); }
+
+    /* Insights 2-column grid */
+    .insights-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .insight-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+    }
+    .insight-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .insight-item {
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-md);
+      margin-bottom: 0.75rem;
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+    .insight-improved {
+      background: rgba(16, 185, 129, 0.08);
+      border-left: 3px solid var(--brand-green);
+      color: #A7F3D0;
+    }
+    .insight-needs-work {
+      background: rgba(245, 158, 11, 0.08);
+      border-left: 3px solid var(--brand-gold);
+      color: #FDE68A;
+    }
+
+    /* Empty state */
+    .empty-compare-box {
+      text-align: center;
+      padding: 4rem 2rem;
+      background: var(--bg-card);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-xl);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+  {% include 'partials/sidebar.html' %}
+
+  <!-- Main Content -->
+  <div class="main-content">
+    {% with topbar_label="Resume Progress Comparison" %}
+      {% include 'partials/topbar.html' %}
+    {% endwith %}
+
+    <div class="page-content">
+        <div class="compare-header">
+          <div>
+            <h1>Resume Progress Comparison</h1>
+            <p>Compare previous vs current resume analyses to see your exact skill & score improvements</p>
+          </div>
+          <div>
+            <a href="/upload" class="btn btn-primary btn-sm">📄 Upload New Version</a>
+          </div>
+        </div>
+
+        <!-- Analysis Selectors Card -->
+        <div class="compare-selectors-card">
+          <div class="selector-group">
+            <label class="form-label" style="font-size:0.8rem;">Base Analysis (Earlier)</label>
+            <select id="select-analysis-prev" class="form-select">
+              <option value="">Loading analyses...</option>
+            </select>
+          </div>
+          <div style="font-size:1.5rem;color:var(--text-muted);display:flex;align-items:center;padding-top:1.5rem;">➔</div>
+          <div class="selector-group">
+            <label class="form-label" style="font-size:0.8rem;">Current Analysis (Newer)</label>
+            <select id="select-analysis-curr" class="form-select">
+              <option value="">Loading analyses...</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end;height:65px;">
+            <button id="btn-recompare" class="btn btn-primary" style="height:42px;">🔄 Compare</button>
+          </div>
+        </div>
+
+        <!-- Main Comparison Container -->
+        <div id="comparison-content" style="display:none;">
+          <!-- 4 Score Cards -->
+          <div class="score-compare-grid">
+            <!-- Overall Score -->
+            <div class="score-compare-card">
+              <div class="sc-label">Overall Resume Score</div>
+              <div class="sc-values">
+                <span id="c-overall-prev" class="sc-val-prev">0</span>
+                <span class="sc-arrow">→</span>
+                <span id="c-overall-curr" class="sc-val-curr">0</span>
+              </div>
+              <div id="c-overall-delta" class="delta-badge delta-pos">+0 pts</div>
+            </div>
+
+            <!-- ATS Score -->
+            <div class="score-compare-card">
+              <div class="sc-label">ATS Compatibility</div>
+              <div class="sc-values">
+                <span id="c-ats-prev" class="sc-val-prev">0%</span>
+                <span class="sc-arrow">→</span>
+                <span id="c-ats-curr" class="sc-val-curr">0%</span>
+              </div>
+              <div id="c-ats-delta" class="delta-badge delta-pos">+0%</div>
+            </div>
+
+            <!-- Readiness Score -->
+            <div class="score-compare-card">
+              <div class="sc-label">Resume Readiness</div>
+              <div class="sc-values">
+                <span id="c-ready-prev" class="sc-val-prev">0%</span>
+                <span class="sc-arrow">→</span>
+                <span id="c-ready-curr" class="sc-val-curr">0%</span>
+              </div>
+              <div id="c-ready-delta" class="delta-badge delta-pos">+0%</div>
+            </div>
+
+            <!-- Missing Skills -->
+            <div class="score-compare-card">
+              <div class="sc-label">Missing Skills Count</div>
+              <div class="sc-values">
+                <span id="c-missing-prev" class="sc-val-prev">0</span>
+                <span class="sc-arrow">→</span>
+                <span id="c-missing-curr" class="sc-val-curr">0</span>
+              </div>
+              <div id="c-missing-delta" class="delta-badge delta-pos">-0 skills</div>
+            </div>
+          </div>
+
+          <!-- Side by Side Category Chart -->
+          <div class="chart-container-card">
+            <div class="chart-header">
+              <div>
+                <h3 style="margin:0;font-size:1.15rem;">Category Scores Comparison</h3>
+                <p style="color:var(--text-muted);font-size:0.85rem;margin:0;">Visual breakdown of points scored in each evaluation category</p>
+              </div>
+            </div>
+            <div style="height: 320px; position: relative;">
+              <canvas id="categoryCompareChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Category Scores Detailed Table -->
+          <div class="compare-table-wrap">
+            <table class="compare-table">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Base Score</th>
+                  <th>Current Score</th>
+                  <th>Max Points</th>
+                  <th>Change</th>
+                  <th>Feedback & Impact</th>
+                </tr>
+              </thead>
+              <tbody id="category-table-body">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Insights Grid: What Improved vs What Needs Attention -->
+          <div class="insights-grid">
+            <div class="insight-card">
+              <div class="insight-title" style="color:#34D399;">
+                <span>🚀 What Improved</span>
+              </div>
+              <div id="improved-list">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+
+            <div class="insight-card">
+              <div class="insight-title" style="color:#FBBF24;">
+                <span>🎯 What Still Needs Attention</span>
+              </div>
+              <div id="needs-work-list">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Visual Side-by-Side Evolution (Diff) -->
+          <div class="card" style="margin-top:2rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
+              <div>
+                <h3 style="font-size:1.15rem;margin:0 0 0.2rem;">Visual Resume Evolution (Side-by-Side Diff)</h3>
+                <p style="font-size:0.82rem;color:var(--text-muted);margin:0;">Inspect what skills, sections, and statements evolved between both drafts</p>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
+              <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1.25rem;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+                  <strong style="font-size:0.88rem;color:var(--text-primary);" id="diff-prev-title">Earlier Draft</strong>
+                  <span class="badge badge-amber" id="diff-prev-score">Score: —</span>
+                </div>
+                <div id="diff-prev-skills" style="display:flex;flex-wrap:wrap;gap:0.35rem;margin-bottom:1rem;"></div>
+                <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.35rem;">Identified Gaps:</div>
+                <ul id="diff-prev-gaps" style="margin:0;padding-left:1.2rem;font-size:0.82rem;color:var(--text-secondary);line-height:1.5;"></ul>
+              </div>
+
+              <div style="background:var(--bg-secondary);border:1px solid var(--accent);border-radius:var(--radius-sm);padding:1.25rem;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+                  <strong style="font-size:0.88rem;color:var(--accent);" id="diff-curr-title">Current Draft</strong>
+                  <span class="badge badge-green" id="diff-curr-score">Score: —</span>
+                </div>
+                <div id="diff-curr-skills" style="display:flex;flex-wrap:wrap;gap:0.35rem;margin-bottom:1rem;"></div>
+                <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.35rem;">Identified Gaps:</div>
+                <ul id="diff-curr-gaps" style="margin:0;padding-left:1.2rem;font-size:0.82rem;color:var(--text-secondary);line-height:1.5;"></ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Actions -->
+          <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:2rem;">
+            <a href="/upload" class="btn btn-primary">📄 Re-Upload Improved Resume</a>
+            <a href="/certificate" class="btn btn-secondary">🏆 Check Readiness Certificate</a>
+            <a href="/history" class="btn btn-secondary">📜 View All Analyses</a>
+          </div>
+        </div>
+
+        <!-- Empty state when fewer than 2 analyses -->
+        <div id="empty-state" class="empty-compare-box" style="display:none;">
+          <div style="font-size:3rem;margin-bottom:1rem;">🔄</div>
+          <h3>Need at Least 2 Analyses to Compare</h3>
+          <p style="color:var(--text-muted);max-width:500px;margin:0.5rem auto 1.5rem;">
+            Upload an improved version of your resume to compare your score changes, track skill improvements, and see your progress toward career readiness.
+          </p>
+          <a href="/upload" class="btn btn-primary">Upload Next Resume Version</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include 'partials/firebase_boot.html' %}
+
+  <script>
+    let myChart = null;
+    let allAnalyses = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (typeof onAuthRequired === 'function') {
+        const user = await onAuthRequired('/login');
+        if (!user) return;
+      }
+
+      loadComparisonOptions();
+
+      document.getElementById('btn-recompare').addEventListener('click', () => {
+        const prevId = document.getElementById('select-analysis-prev').value;
+        const currId = document.getElementById('select-analysis-curr').value;
+        if (!prevId || !currId) {
+          showToast('Please select both analyses to compare', 'warning');
+          return;
+        }
+        if (prevId === currId) {
+          showToast('Please select two different analyses to compare', 'warning');
+          return;
+        }
+        sessionStorage.setItem('compareIds', JSON.stringify([prevId, currId]));
+        fetchAndCompare(prevId, currId);
+      });
+    });
+
+    async function loadComparisonOptions() {
+      try {
+        const hist = await apiCall('GET', '/api/analysis/history');
+        allAnalyses = hist.analyses || [];
+
+        if (allAnalyses.length < 2) {
+          document.getElementById('empty-state').style.display = 'block';
+          document.getElementById('comparison-content').style.display = 'none';
+          document.querySelector('.compare-selectors-card').style.display = 'none';
+          return;
+        }
+
+        const selPrev = document.getElementById('select-analysis-prev');
+        const selCurr = document.getElementById('select-analysis-curr');
+        selPrev.innerHTML = '';
+        selCurr.innerHTML = '';
+
+        allAnalyses.forEach((a, idx) => {
+          const num = allAnalyses.length - idx;
+          const optText = `#${num} - ${a.filename || 'Resume'} (${formatDate(a.createdAt)}) - Score: ${a.overallScore}/100`;
+          selPrev.innerHTML += `<option value="${a.analysisId}">${optText}</option>`;
+          selCurr.innerHTML += `<option value="${a.analysisId}">${optText}</option>`;
+        });
+
+        // Determine which two to compare
+        let compareIds = [];
+        try {
+          compareIds = JSON.parse(sessionStorage.getItem('compareIds') || '[]');
+        } catch(e) {}
+
+        let prevId, currId;
+        if (compareIds && compareIds.length >= 2) {
+          prevId = compareIds[0];
+          currId = compareIds[1];
+        } else {
+          // Default: latest is currId, previous is prevId
+          currId = allAnalyses[0].analysisId;
+          prevId = allAnalyses[1].analysisId;
+        }
+
+        selPrev.value = prevId;
+        selCurr.value = currId;
+
+        fetchAndCompare(prevId, currId);
+
+      } catch (err) {
+        console.error(err);
+        showToast('Failed to load analysis history: ' + err.message, 'error');
+      }
+    }
+
+    async function fetchAndCompare(prevId, currId) {
+      showLoading('Comparing analyses...');
+      try {
+        const [resPrev, resCurr] = await Promise.all([
+          apiCall('GET', `/api/analysis/${prevId}`),
+          apiCall('GET', `/api/analysis/${currId}`)
+        ]);
+
+        const prev = resPrev.fullAnalysis || resPrev;
+        const curr = resCurr.fullAnalysis || resCurr;
+
+        renderComparison(prev, curr);
+        document.getElementById('comparison-content').style.display = 'block';
+        document.getElementById('empty-state').style.display = 'none';
+      } catch (e) {
+        showToast('Failed to compare: ' + e.message, 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    function renderComparison(prev, curr) {
+      // 1. Overall Score
+      const oPrev = prev.overall_score || 0;
+      const oCurr = curr.overall_score || 0;
+      const oDelta = oCurr - oPrev;
+      document.getElementById('c-overall-prev').textContent = oPrev;
+      document.getElementById('c-overall-curr').textContent = oCurr;
+      setDeltaBadge('c-overall-delta', oDelta, 'pts');
+
+      // 2. ATS Score
+      const aPrev = prev.ats_score || 0;
+      const aCurr = curr.ats_score || 0;
+      const aDelta = aCurr - aPrev;
+      document.getElementById('c-ats-prev').textContent = aPrev + '%';
+      document.getElementById('c-ats-curr').textContent = aCurr + '%';
+      setDeltaBadge('c-ats-delta', aDelta, '%');
+
+      // 3. Readiness Score
+      const rPrev = prev.readiness_score || 0;
+      const rCurr = curr.readiness_score || 0;
+      const rDelta = rCurr - rPrev;
+      document.getElementById('c-ready-prev').textContent = rPrev + '%';
+      document.getElementById('c-ready-curr').textContent = rCurr + '%';
+      setDeltaBadge('c-ready-delta', rDelta, '%');
+
+      // 4. Missing Skills (less is better)
+      const mPrev = (prev.missing_skills || []).length;
+      const mCurr = (curr.missing_skills || []).length;
+      const mDelta = mCurr - mPrev; // if negative, good!
+      document.getElementById('c-missing-prev').textContent = mPrev;
+      document.getElementById('c-missing-curr').textContent = mCurr;
+      const mBadge = document.getElementById('c-missing-delta');
+      if (mDelta < 0) {
+        mBadge.className = 'delta-badge delta-pos';
+        mBadge.textContent = `${mDelta} skills (Improved)`;
+      } else if (mDelta > 0) {
+        mBadge.className = 'delta-badge delta-neg';
+        mBadge.textContent = `+${mDelta} skills`;
+      } else {
+        mBadge.className = 'delta-badge delta-zero';
+        mBadge.textContent = 'No change';
+      }
+
+      // 5. Category Scores Table
+      const catLabels = {
+        ats_compatibility: 'ATS Compatibility',
+        skills: 'Skills',
+        projects_experience: 'Projects & Experience',
+        education: 'Education',
+        achievements: 'Achievements',
+        structure: 'Resume Structure',
+        readability: 'Readability & Grammar'
+      };
+      const catMaxes = {
+        ats_compatibility: 20,
+        skills: 20,
+        projects_experience: 20,
+        education: 10,
+        achievements: 10,
+        structure: 10,
+        readability: 10
+      };
+
+      const pCats = prev.category_scores || {};
+      const cCats = curr.category_scores || {};
+      const cFeedback = curr.category_feedback || {};
+
+      const tbody = document.getElementById('category-table-body');
+      tbody.innerHTML = Object.keys(catLabels).map(key => {
+        const pScore = pCats[key] || 0;
+        const cScore = cCats[key] || 0;
+        const maxPts = catMaxes[key] || 10;
+        const diff = cScore - pScore;
+        const diffBadge = diff > 0 
+          ? `<span class="delta-badge delta-pos">+${diff}</span>` 
+          : (diff < 0 ? `<span class="delta-badge delta-neg">${diff}</span>` : `<span class="delta-badge delta-zero">0</span>`);
+
+        return `
+          <tr>
+            <td><strong>${catLabels[key]}</strong></td>
+            <td>${pScore} / ${maxPts}</td>
+            <td><strong>${cScore}</strong> / ${maxPts}</td>
+            <td>${maxPts} pts</td>
+            <td>${diffBadge}</td>
+            <td style="color:var(--text-muted);font-size:0.85rem;max-width:320px;">
+              ${escapeHtml(cFeedback[key] || 'Performance updated')}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // 6. Side by Side Bar Chart
+      renderChart(catLabels, pCats, cCats);
+
+      // 7. What improved & What needs work
+      renderInsights(prev, curr);
+
+      // 8. Render Visual Evolution (Side-by-Side Diff)
+      renderEvolutionDiff(prev, curr);
+    }
+
+    function renderEvolutionDiff(prev, curr) {
+      document.getElementById('diff-prev-title').textContent = prev.filename || 'Earlier Draft';
+      document.getElementById('diff-prev-score').textContent = `Score: ${prev.overall_score || 0}/100`;
+      
+      document.getElementById('diff-curr-title').textContent = curr.filename || 'Current Draft';
+      document.getElementById('diff-curr-score').textContent = `Score: ${curr.overall_score || 0}/100`;
+
+      // Skills
+      const pSkills = (prev.skills || []).map(s => typeof s === 'string' ? s : s.name);
+      const cSkills = (curr.skills || []).map(s => typeof s === 'string' ? s : s.name);
+      
+      const pSkillsBox = document.getElementById('diff-prev-skills');
+      pSkillsBox.innerHTML = pSkills.slice(0, 10).map(s => `<span class="badge badge-neutral" style="font-size:0.75rem;">${escapeHtml(s)}</span>`).join('') || '<span style="color:var(--text-muted);font-size:0.8rem;">No skills logged</span>';
+
+      const cSkillsBox = document.getElementById('diff-curr-skills');
+      cSkillsBox.innerHTML = cSkills.slice(0, 10).map(s => {
+        const isNew = !pSkills.includes(s);
+        return `<span class="badge ${isNew ? 'badge-green' : 'badge-neutral'}" style="font-size:0.75rem;">${escapeHtml(s)}${isNew ? ' ✨' : ''}</span>`;
+      }).join('') || '<span style="color:var(--text-muted);font-size:0.8rem;">No skills logged</span>';
+
+      // Gaps
+      const pGaps = prev.missing_skills || [];
+      const cGaps = curr.missing_skills || [];
+      
+      const pGapsBox = document.getElementById('diff-prev-gaps');
+      pGapsBox.innerHTML = pGaps.slice(0, 4).map(g => `<li>${escapeHtml(g)}</li>`).join('') || '<li>None</li>';
+
+      const cGapsBox = document.getElementById('diff-curr-gaps');
+      cGapsBox.innerHTML = cGaps.slice(0, 4).map(g => `<li>${escapeHtml(g)}</li>`).join('') || '<li>All core gaps resolved!</li>';
+    }
+
+    function setDeltaBadge(elId, delta, unit) {
+      const el = document.getElementById(elId);
+      if (delta > 0) {
+        el.className = 'delta-badge delta-pos';
+        el.textContent = `+${delta} ${unit}`;
+      } else if (delta < 0) {
+        el.className = 'delta-badge delta-neg';
+        el.textContent = `${delta} ${unit}`;
+      } else {
+        el.className = 'delta-badge delta-zero';
+        el.textContent = `0 ${unit}`;
+      }
+    }
+
+    function renderChart(catLabels, pCats, cCats) {
+      const ctx = document.getElementById('categoryCompareChart').getContext('2d');
+      if (myChart) myChart.destroy();
+
+      const labels = Object.values(catLabels);
+      const keys = Object.keys(catLabels);
+      const dataPrev = keys.map(k => pCats[k] || 0);
+      const dataCurr = keys.map(k => cCats[k] || 0);
+
+      myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Base Resume',
+              data: dataPrev,
+              backgroundColor: 'rgba(148, 163, 184, 0.4)',
+              borderColor: 'rgba(148, 163, 184, 0.8)',
+              borderWidth: 1,
+              borderRadius: 4
+            },
+            {
+              label: 'Current Resume',
+              data: dataCurr,
+              backgroundColor: 'rgba(59, 130, 246, 0.75)',
+              borderColor: 'rgba(59, 130, 246, 1)',
+              borderWidth: 1,
+              borderRadius: 4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: 'rgba(241, 245, 249, 0.85)', font: { size: 12 } }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: 'rgba(200, 210, 230, 0.7)', font: { size: 11 } },
+              grid: { color: 'rgba(255, 255, 255, 0.05)' }
+            },
+            y: {
+              min: 0,
+              max: 20,
+              ticks: { color: 'rgba(200, 210, 230, 0.7)', stepSize: 5 },
+              grid: { color: 'rgba(255, 255, 255, 0.05)' }
+            }
+          }
+        }
+      });
+    }
+
+    function renderInsights(prev, curr) {
+      const impList = document.getElementById('improved-list');
+      const workList = document.getElementById('needs-work-list');
+
+      const improvements = [];
+      const needsWork = [];
+
+      // Check overall
+      if ((curr.overall_score || 0) > (prev.overall_score || 0)) {
+        improvements.push(`Overall score increased by <strong>+${curr.overall_score - prev.overall_score} points</strong> (from ${prev.overall_score} to ${curr.overall_score}/100).`);
+      }
+      if ((curr.ats_score || 0) > (prev.ats_score || 0)) {
+        improvements.push(`ATS compatibility rose by <strong>+${curr.ats_score - prev.ats_score}%</strong>, significantly improving chances with automated resume screening.`);
+      }
+
+      // Check skills evidence gains
+      const pSkills = {};
+      (prev.skills || []).forEach(s => { pSkills[s.name?.toLowerCase()] = s.evidence_score || 0; });
+      (curr.skills || []).forEach(s => {
+        const name = s.name;
+        const pScore = pSkills[name?.toLowerCase()];
+        if (pScore !== undefined && s.evidence_score > pScore) {
+          improvements.push(`<strong>${escapeHtml(name)}:</strong> Resume evidence increased from ${pScore}/100 to ${s.evidence_score}/100.`);
+        }
+      });
+
+      // Check missing skills resolved
+      const pMiss = new Set((prev.missing_skills || []).map(m => m.toLowerCase()));
+      const cMiss = new Set((curr.missing_skills || []).map(m => m.toLowerCase()));
+      const resolved = [...pMiss].filter(x => !cMiss.has(x));
+      if (resolved.length > 0) {
+        improvements.push(`Successfully added missing industry skills: <strong>${resolved.slice(0, 4).map(escapeHtml).join(', ')}</strong>.`);
+      }
+
+      if (improvements.length === 0) {
+        improvements.push('No significant improvements detected between these two versions yet. Follow the personalized learning recommendations to build stronger evidence.');
+      }
+
+      // What still needs work
+      if ((curr.overall_score || 0) < 90) {
+        needsWork.push(`Reach at least <strong>90/100</strong> overall score (currently ${curr.overall_score}) to unlock the Resume Readiness Certificate.`);
+      }
+      if ((curr.ats_score || 0) < 90) {
+        needsWork.push(`Optimize formatting and keywords to raise ATS Compatibility above <strong>90%</strong> (currently ${curr.ats_score}%).`);
+      }
+      if ((curr.missing_skills || []).length > 0) {
+        needsWork.push(`Critical skills still missing from target profile: <strong>${curr.missing_skills.slice(0, 4).map(escapeHtml).join(', ')}</strong>.`);
+      }
+      (curr.suggestions || []).slice(0, 2).forEach(sug => {
+        needsWork.push(escapeHtml(sug));
+      });
+
+      impList.innerHTML = improvements.map(item => `
+        <div class="insight-item insight-improved">
+          ✓ ${item}
+        </div>
+      `).join('');
+
+      workList.innerHTML = needsWork.map(item => `
+        <div class="insight-item insight-needs-work">
+          ⚡ ${item}
+        </div>
+      `).join('');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>

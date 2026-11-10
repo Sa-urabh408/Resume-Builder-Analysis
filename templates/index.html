@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ResumeAI — Objective Resume Analysis & Career Readiness</title>
+  <meta name="description" content="Know exactly how your resume reads to a recruiter. Editorial resume evaluation, skill gap detection, and personalized learning roadmaps." />
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <style>
+    /* ── Navbar ── */
+    .site-nav {
+      border-bottom: 1px solid var(--border);
+      background-color: var(--bg-card);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    .nav-inner {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand-mark {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none !important;
+    }
+    .brand-mark .logo-box {
+      width: 26px;
+      height: 26px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: var(--radius-xs);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-serif);
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+    .brand-mark span {
+      font-family: var(--font-serif);
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .nav-links {
+      display: flex;
+      gap: 1.75rem;
+      align-items: center;
+    }
+    .nav-links a {
+      color: var(--text-secondary);
+      font-size: 0.88rem;
+      font-weight: 500;
+    }
+    .nav-links a:hover {
+      color: var(--text-primary);
+    }
+    .nav-links a.btn,
+    .nav-links a.btn-primary,
+    .nav-links a.btn-primary:hover {
+      color: var(--accent-btn-text);
+    }
+
+    /* ── Hero Section (Editorial Stationery) ── */
+    .hero-section {
+      padding: 5rem 1.5rem 4.5rem;
+      max-width: 1140px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 3.5rem;
+      align-items: center;
+    }
+    .hero-text {
+      text-align: left;
+    }
+    .hero-text h1 {
+      font-size: clamp(2.3rem, 4.2vw, 3.4rem);
+      line-height: 1.15;
+      margin-bottom: 1.25rem;
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+    .hero-text p {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+      max-width: 520px;
+      line-height: 1.6;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    /* ── Specimen Paper Artifact ── */
+    .specimen-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 2rem;
+      box-shadow: var(--shadow-card);
+      position: relative;
+    }
+    .specimen-card::before {
+      content: "SPECIMEN EVALUATION";
+      position: absolute;
+      top: -10px;
+      right: 20px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      padding: 0.2rem 0.5rem;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+    .specimen-score-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .specimen-score-num {
+      font-family: var(--font-serif);
+      font-size: 3.2rem;
+      font-weight: 500;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .specimen-score-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .specimen-breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.45rem 0;
+      font-size: 0.88rem;
+      border-bottom: 1px dashed var(--border-subtle);
+    }
+    .specimen-breakdown-row:last-child {
+      border-bottom: none;
+    }
+
+    /* ── Features Grid ── */
+    .section-wrap {
+      border-top: 1px solid var(--border);
+      padding: 5rem 1.5rem;
+      background-color: #FFFFFF;
+    }
+    .section-inner {
+      max-width: 1140px;
+      margin: 0 auto;
+    }
+    .section-head {
+      margin-bottom: 3.5rem;
+      text-align: left;
+    }
+    .features-editorial-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 2rem;
+    }
+    .feature-editorial-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 1.75rem;
+      background: var(--bg-card-subtle);
+      text-align: left;
+    }
+    .feature-editorial-card .num {
+      font-family: var(--font-serif);
+      font-size: 1.4rem;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+    .feature-editorial-card h3 {
+      font-size: 1.15rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* ── Steps ── */
+    .steps-section {
+      padding: 5rem 1.5rem;
+      max-width: 1140px;
+      margin: 0 auto;
+    }
+    .steps-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2.5rem;
+    }
+    .step-box {
+      border-top: 2px solid var(--accent);
+      padding-top: 1rem;
+    }
+    .step-box .step-num {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      margin-bottom: 0.35rem;
+    }
+
+    /* ── Footer ── */
+    .site-footer {
+      border-top: 1px solid var(--border);
+      padding: 3rem 1.5rem;
+      background: var(--bg-primary);
+      text-align: left;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .footer-inner {
+      max-width: 1140px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 860px) {
+      .hero-section {
+        grid-template-columns: 1fr;
+        padding: 3.5rem 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <header class="site-nav">
+    <div class="nav-inner">
+      <a href="/" class="brand-mark">
+        <div class="logo-box">R</div>
+        <span>ResumeAI</span>
+      </a>
+      <nav class="nav-links">
+        <a href="#framework">Framework</a>
+        <a href="#methodology">Process</a>
+        <a href="/login">Sign in</a>
+        <button class="theme-toggle-btn" type="button" aria-label="Toggle theme" title="Toggle theme" style="margin-left: 0.25rem;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+        <a href="/signup" class="btn btn-primary btn-sm">Evaluate Resume</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main>
+    <section class="hero-section">
+      <div class="hero-text">
+        <span class="section-tag">Editorial Resume Intelligence</span>
+        <h1>Know exactly how your resume reads to a recruiter.</h1>
+        <p>
+          Objective evaluation across standard hiring benchmarks. Identify concrete skill gaps, receive verified free learning resources, and follow a weekly plan to career readiness.
+        </p>
+        <div class="hero-actions">
+          <a href="/upload" class="btn btn-primary btn-lg">Upload Resume for Evaluation</a>
+          <a href="#methodology" class="btn btn-secondary btn-lg">Review Methodology</a>
+        </div>
+      </div>
+
+      <!-- Specimen Paper Preview -->
+      <div class="specimen-card">
+        <div class="specimen-score-row">
+          <div>
+            <div class="specimen-score-num">86<span style="font-size:1.5rem;color:var(--text-muted);">/100</span></div>
+            <div class="specimen-score-sub">Overall Readiness Score</div>
+          </div>
+          <span class="badge badge-green">Recruiter Benchmark: Ready</span>
+        </div>
+
+        <div class="specimen-breakdown-row">
+          <span>ATS Parsing & Structure</span>
+          <strong>18 / 20</strong>
+        </div>
+        <div class="specimen-breakdown-row">
+          <span>Technical Competencies</span>
+          <strong>17 / 20</strong>
+        </div>
+        <div class="specimen-breakdown-row">
+          <span>Project Depth & Measurable Impact</span>
+          <strong>17 / 20</strong>
+        </div>
+        <div class="specimen-breakdown-row">
+          <span>Academic Background</span>
+          <strong>9 / 10</strong>
+        </div>
+        <div class="specimen-breakdown-row">
+          <span>Clarity & Professional Tone</span>
+          <strong>9 / 10</strong>
+        </div>
+
+        <div style="margin-top:1.25rem;padding:0.75rem;background:var(--bg-secondary);border-radius:var(--radius-xs);font-size:0.8rem;color:var(--text-secondary);line-height:1.4;">
+          <strong>Key Recommendation:</strong> Add quantifiable outcome metrics to featured projects and ensure cloud infrastructure tools are explicitly demonstrated.
+        </div>
+      </div>
+    </section>
+
+    <!-- The Evaluation Framework -->
+    <section class="section-wrap" id="framework">
+      <div class="section-inner">
+        <div class="section-head">
+          <span class="section-tag">Evaluation Criteria</span>
+          <h2>A transparent, seven-part hiring rubric</h2>
+          <p style="max-width:540px;">We replace vague percentages with actionable evidence extracted directly from your document.</p>
+        </div>
+
+        <div class="features-editorial-grid">
+          <div class="feature-editorial-card">
+            <div class="num">01</div>
+            <h3>ATS Parsing Integrity</h3>
+            <p>Verification that automated applicant tracking systems parse your contact details, chronological roles, and technical headings cleanly.</p>
+          </div>
+
+          <div class="feature-editorial-card">
+            <div class="num">02</div>
+            <h3>Evidence-Based Skill Levels</h3>
+            <p>Skills categorized as Beginner, Intermediate, or Advanced solely based on concrete project and work history proof in the document.</p>
+          </div>
+
+          <div class="feature-editorial-card">
+            <div class="num">03</div>
+            <h3>Specific Skill Gap Detection</h3>
+            <p>Distinguishes your established strengths from weak mentions and identifies high-priority missing capabilities required for target roles.</p>
+          </div>
+
+          <div class="feature-editorial-card">
+            <div class="num">04</div>
+            <h3>Curated Free Learning</h3>
+            <p>Specific YouTube lectures, official documentation guides, and hands-on practice platforms. Completely free, verified, and free of paywalls.</p>
+          </div>
+
+          <div class="feature-editorial-card">
+            <div class="num">05</div>
+            <h3>Target Role & Job Matching</h3>
+            <p>Paste any job description to evaluate alignment, match percentages, and determine which keyword additions genuinely represent your background.</p>
+          </div>
+
+          <div class="feature-editorial-card">
+            <div class="num">06</div>
+            <h3>Version Progress Comparison</h3>
+            <p>Upload revised drafts and view exact delta tracking — measure point-by-point gains in ATS readability, skill depth, and readiness.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Process / Methodology -->
+    <section class="steps-section" id="methodology">
+      <span class="section-tag">The Workflow</span>
+      <h2>From assessment to demonstrable readiness</h2>
+      
+      <div class="steps-row">
+        <div class="step-box">
+          <div class="step-num">STEP 01</div>
+          <h4>Submit Document</h4>
+          <p>Provide your existing PDF or Word resume. Text is parsed cleanly without storing sensitive information.</p>
+        </div>
+        <div class="step-box">
+          <div class="step-num">STEP 02</div>
+          <h4>Structured Audit</h4>
+          <p>Receive transparent category scores, identified strengths, and prioritized areas for improvement.</p>
+        </div>
+        <div class="step-box">
+          <div class="step-num">STEP 03</div>
+          <h4>Execute Roadmap</h4>
+          <p>Follow tailored weekly tasks, build portfolio-grade projects, and complete verified free coursework.</p>
+        </div>
+        <div class="step-box">
+          <div class="step-num">STEP 04</div>
+          <h4>Verify Readiness</h4>
+          <p>Re-analyze the revised resume and generate a verifiable Certificate of Resume Readiness upon reaching 90+.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div>
+        <strong>ResumeAI</strong> — Structured resume evaluation and career readiness platform.
+      </div>
+      <div>
+        <a href="/login" style="margin-right:1.25rem;">Sign In</a>
+        <a href="/signup">Create Account</a>
+      </div>
+    </div>
+  </footer>
+
+  {% include 'partials/firebase_boot.html' %}
+</body>
+</html>

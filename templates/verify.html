@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Certificate Verification – ResumeAI</title>
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <style>
+    /* ── Public page — no sidebar, centred layout ── */
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-primary);
+    }
+
+    /* Top bar */
+    .verify-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 2rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-secondary);
+    }
+    .verify-topbar .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+    }
+    .verify-topbar .logo-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--gradient-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: 800;
+      color: #fff;
+    }
+    .verify-topbar .logo-text {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    /* Main area */
+    .verify-main {
+      flex: 1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 2.5rem 1rem 4rem;
+    }
+    .verify-container {
+      width: 100%;
+      max-width: 640px;
+    }
+
+    /* ── Status banner ── */
+    .status-banner {
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1.25rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.75rem;
+    }
+    .status-banner.valid {
+      background: rgba(34,197,94,0.12);
+      border: 1px solid rgba(34,197,94,0.4);
+      color: #22c55e;
+    }
+    .status-banner.invalid {
+      background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.4);
+      color: #ef4444;
+    }
+
+    /* ── Certificate card ── */
+    .cert-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    /* Decorative header band */
+    .cert-card-header {
+      background: var(--gradient-primary);
+      padding: 2rem 2rem 1.5rem;
+      position: relative;
+    }
+    .cert-card-header::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 24px;
+      background: var(--bg-card);
+      border-radius: 24px 24px 0 0;
+    }
+    .cert-card-header .ch-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .cert-card-header .ch-logo-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #fff;
+    }
+    .cert-card-header .ch-logo-text {
+      font-size: 1rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.95);
+    }
+    .cert-card-header .ch-logo-sub {
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.65);
+    }
+    .cert-card-header h2 {
+      color: #fff;
+      font-size: 1.25rem;
+      margin: 0;
+    }
+    .cert-card-header .cert-trophy {
+      position: absolute;
+      top: 1.5rem;
+      right: 2rem;
+      font-size: 3rem;
+      opacity: 0.35;
+    }
+
+    /* Fields */
+    .cert-card-body { padding: 1.75rem 2rem 2rem; }
+    .cert-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.8rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .cert-row:last-child { border-bottom: none; }
+    .cert-row-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 500;
+    }
+    .cert-row-value {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      text-align: right;
+      word-break: break-all;
+    }
+    .cert-row-value.id-mono {
+      font-family: monospace;
+      font-size: 0.85rem;
+      background: var(--bg-secondary);
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .cert-row-value.valid-status { color: #22c55e; }
+
+    /* Score chips */
+    .score-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.3rem 0.8rem;
+      border-radius: 99px;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+    .score-chip.blue   { background: rgba(59,130,246,0.15); color: #60a5fa; }
+    .score-chip.purple { background: rgba(168,85,247,0.15); color: #c084fc; }
+
+    /* ── Not found card ── */
+    .not-found-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 3rem 2rem;
+      text-align: center;
+    }
+    .not-found-card .nf-icon { font-size: 4rem; margin-bottom: 1rem; }
+    .not-found-card h2 { margin: 0 0 0.75rem; }
+    .not-found-card p  { color: var(--text-secondary); margin: 0 0 1.5rem; }
+    .not-found-card .cert-id-badge {
+      display: inline-block;
+      font-family: monospace;
+      font-size: 0.85rem;
+      background: var(--bg-secondary);
+      padding: 4px 10px;
+      border-radius: 6px;
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+    }
+
+    /* Disclaimer */
+    .verify-disclaimer {
+      margin-top: 1.5rem;
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Footer */
+    .verify-footer {
+      padding: 1.25rem 2rem;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .verify-footer a { color: var(--brand-blue); text-decoration: none; }
+    .verify-footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <!-- Top bar -->
+  <header class="verify-topbar">
+    <a href="/" class="logo">
+      <div class="logo-icon">R</div>
+      <span class="logo-text">ResumeAI</span>
+    </a>
+    <span style="font-size:0.8rem;color:var(--text-muted);">Certificate Verification Portal</span>
+  </header>
+
+  <main class="verify-main">
+    <div class="verify-container">
+
+      {% if cert_data and cert_data.verificationStatus == 'valid' %}
+
+      <!-- ── VALID CERTIFICATE ── -->
+      <div class="status-banner valid">
+        <span>✅</span>
+        <span>CERTIFICATE VERIFIED — This certificate is authentic and valid.</span>
+      </div>
+
+      <div class="cert-card">
+        <!-- Decorative header -->
+        <div class="cert-card-header">
+          <div class="ch-logo">
+            <div class="ch-logo-icon">R</div>
+            <div>
+              <div class="ch-logo-text">ResumeAI</div>
+              <div class="ch-logo-sub">Resume Readiness Certificate</div>
+            </div>
+          </div>
+          <h2>Certificate of Resume Readiness</h2>
+          <div class="cert-trophy">🏆</div>
+        </div>
+
+        <!-- Fields -->
+        <div class="cert-card-body">
+          <div class="cert-row">
+            <span class="cert-row-label">Certificate ID</span>
+            <span class="cert-row-value id-mono">{{ cert_data.certificateId }}</span>
+          </div>
+          <div class="cert-row">
+            <span class="cert-row-label">Holder Name</span>
+            <span class="cert-row-value">{{ cert_data.userName }}</span>
+          </div>
+          <div class="cert-row">
+            <span class="cert-row-label">Resume Readiness Score</span>
+            <span class="cert-row-value">
+              <span class="score-chip blue">📄 {{ cert_data.overallScore }}/100</span>
+            </span>
+          </div>
+          <div class="cert-row">
+            <span class="cert-row-label">ATS Compatibility Score</span>
+            <span class="cert-row-value">
+              <span class="score-chip purple">🤖 {{ cert_data.atsScore }}/100</span>
+            </span>
+          </div>
+          <div class="cert-row">
+            <span class="cert-row-label">Issue Date</span>
+            <span class="cert-row-value" id="issue-date-display">
+              {{ cert_data.issuedAt }}
+            </span>
+          </div>
+          <div class="cert-row">
+            <span class="cert-row-label">Verification Status</span>
+            <span class="cert-row-value valid-status">✓ Valid</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="verify-disclaimer">
+        ⚠️ <strong>Disclaimer:</strong> This is a <em>ResumeAI platform assessment certificate</em>. 
+        It is not an industry certification, government certificate, or professional qualification. 
+        It reflects the holder's resume quality score as assessed by the ResumeAI platform.
+      </div>
+
+      <div style="margin-top:1.5rem;text-align:center;">
+        <a href="/" class="btn btn-secondary">← View ResumeAI</a>
+      </div>
+
+      {% else %}
+
+      <!-- ── NOT FOUND ── -->
+      <div class="status-banner invalid">
+        <span>❌</span>
+        <span>CERTIFICATE NOT FOUND — This certificate could not be verified.</span>
+      </div>
+
+      <div class="not-found-card">
+        <div class="nf-icon">🔍</div>
+        <h2>Certificate Not Found</h2>
+        {% if cert_id %}
+        <div class="cert-id-badge">{{ cert_id }}</div>
+        {% endif %}
+        <p>Certificate ID <strong>{% if cert_id %}{{ cert_id }}{% else %}(unknown){% endif %}</strong> could not be verified. 
+           It may have been revoked, the ID may be incorrect, or it may not exist in our system.</p>
+        <a href="/" class="btn btn-primary">← Back to ResumeAI</a>
+      </div>
+
+      {% endif %}
+
+    </div>
+  </main>
+
+  <footer class="verify-footer">
+    &copy; {{ 2026 }} <a href="/">ResumeAI</a> — Resume Readiness Platform.
+    This page is publicly accessible to verify certificate authenticity.
+  </footer>
+
+  <!-- Format the raw issuedAt timestamp nicely client-side -->
+  <script>
+    (function () {
+      const el = document.getElementById('issue-date-display');
+      if (!el) return;
+      const raw = el.textContent.trim();
+      if (!raw) return;
+      try {
+        const d = new Date(raw);
+        if (!isNaN(d)) {
+          el.textContent = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+        }
+      } catch (e) { /* keep raw */ }
+    })();
+  </script>
+
+</body>
+</html>
